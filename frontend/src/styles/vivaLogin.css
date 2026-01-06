@@ -1,0 +1,231 @@
+/* ====== Page layout ====== */
+
+.viva-page {
+  display: flex;
+  min-height: 100vh;
+  background: #0f172a;
+  color: #0f172a;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* Left hero (image) */
+.viva-hero {
+  flex: 1.1;
+  position: relative;
+  background-image: url("https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.viva-hero-overlay {
+  width: 100%;
+  padding: 3rem;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.1),
+    rgba(15, 23, 42, 0.85)
+  );
+  color: #f9fafb;
+}
+
+.viva-hero-title {
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.viva-hero-subtitle {
+  font-size: 0.95rem;
+  max-width: 18rem;
+  opacity: 0.9;
+}
+
+/* Right panel (login card) */
+.viva-panel {
+  flex: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #e5f0ff 0, #f9fafb 40%, #e5e7eb 100%);
+}
+
+.viva-panel-inner {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 2.5rem 2.75rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+
+/* Logo row */
+.viva-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1.75rem;
+}
+
+.viva-logo-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.viva-logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.viva-logo-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.viva-logo-tagline {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+/* Titles */
+.viva-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: #111827;
+}
+
+.viva-subheading {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+/* Form */
+.viva-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-bottom: 1.75rem;
+}
+
+.viva-field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.35rem;
+}
+
+.viva-field input {
+  width: 100%;
+  border-radius: 9px;
+  border: 1px solid #d1d5db;
+  padding: 0.6rem 0.7rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease,
+    background-color 0.16s ease;
+  background-color: #f9fafb;
+}
+
+.viva-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  background-color: #ffffff;
+}
+
+/* Button */
+.viva-btn {
+  margin-top: 0.25rem;
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 0.7rem 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.35);
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+
+.viva-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.45);
+  filter: brightness(1.03);
+}
+
+.viva-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.3);
+}
+
+/* Footer text */
+.viva-footer {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+}
+
+/* ====== Responsive ====== */
+
+@media (max-width: 960px) {
+  .viva-page {
+    flex-direction: column;
+  }
+
+  .viva-hero {
+    flex: none;
+    height: 220px;
+  }
+
+  .viva-hero-overlay {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .viva-hero-title {
+    font-size: 1.8rem;
+  }
+
+  .viva-panel {
+    flex: none;
+    padding: 1.5rem 1rem 2.5rem;
+  }
+
+  .viva-panel-inner {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .viva-panel-inner {
+    padding: 1.6rem 1.4rem 1.8rem;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 26px rgba(15, 23, 42, 0.25);
+  }
+
+  .viva-heading {
+    font-size: 1.4rem;
+  }
+
+  .viva-subheading {
+    font-size: 0.85rem;
+  }
+}

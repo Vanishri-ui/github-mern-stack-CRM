@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f4f6f9; /* AdminLTE default background, keep it */
+}
+
+/* Make Cards Cleaner */
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: none;
+  border-radius: 0.5rem; /* Softer corners */
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Info Box Tweaks */
+.info-box {
+  min-height: 80px;
+  padding: .5rem;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.info-box-icon {
+  border-radius: 0.5rem;
+  width: 60px;
+  height: 60px;
+  font-size: 1.5rem;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sidebar Brand */
+.sidebar-brand .brand-link {
+  font-weight: 600 !important;
+  letter-spacing: 0.5px;
+}
+
+/* Remove old glass classes if present to avoid confusion */
+.glass-panel, .input-glass {
+  /* Legacy cleanup */
+  backdrop-filter: none;
+  background: white;
+  color: black;
+  border: 1px solid #ddd;
+}
