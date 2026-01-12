@@ -329,12 +329,18 @@ const SalesModule = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <button className="btn btn-sm btn-info me-1" onClick={() => openEditModal(sale)}>
-                                                    <i className="bi bi-pencil"></i>
-                                                </button>
-                                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(sale._id)}>
-                                                    <i className="bi bi-trash"></i>
-                                                </button>
+                                                {/* Show buttons if Admin, Sales Manager, or Owner */}
+                                                {(user?.role === 'admin' || user?.isSalesManager ||
+                                                    (sale.salesPerson && (sale.salesPerson._id === user?.id || sale.salesPerson === user?.id))) && (
+                                                        <>
+                                                            <button className="btn btn-sm btn-info me-1" onClick={() => openEditModal(sale)}>
+                                                                <i className="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(sale._id)}>
+                                                                <i className="bi bi-trash"></i>
+                                                            </button>
+                                                        </>
+                                                    )}
                                             </td>
                                         </tr>
                                     ))

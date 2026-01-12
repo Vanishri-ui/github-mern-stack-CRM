@@ -11,9 +11,12 @@ const UserSchema = new mongoose.Schema({
   },
   department: {
     type: String,
-    enum: ['sales', 'tech', 'general', 'ops', 'finance', 'hr'],
+    enum: ['sales', 'tech', 'general', 'ops', 'finance', 'hr', 'admin'],
     default: 'general'
-  }
+  },
+  isDepartmentHead: { type: Boolean, default: false }, // Can manage entire department
+  isManager: { type: Boolean, default: false },        // Can manage team (subtype of department)
+  isSalesManager: { type: Boolean, default: false }    // Legacy support for Tabrez
 });
 
 module.exports = mongoose.model('User', UserSchema);

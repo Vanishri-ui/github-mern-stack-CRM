@@ -26,7 +26,17 @@ const Sidebar = () => {
                             </li>
                         )}
 
-                        <li className="nav-header">MODULES</li>
+                        {/* Roles & Team Link: Admin or Heads */}
+                        {(user?.role === 'admin' || user?.isDepartmentHead || user?.isSalesManager) && (
+                            <li className="nav-item">
+                                <Link to="/roles" className="nav-link">
+                                    <i className="nav-icon bi bi-diagram-3"></i>
+                                    <p>Roles & Team</p>
+                                </Link>
+                            </li>
+                        )}
+
+                        <li className="nav-header">DEPARTMENTS</li>
 
                         {/* Documents Link: All Users */}
                         <li className="nav-item">

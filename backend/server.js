@@ -15,6 +15,41 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// ======= ADMIN BYPASS - Top Priority Route =======
+app.post("/api/auth/admin-bypass", async (req, res) => {
+  console.log(">>> ADMIN BYPASS HIT <<<");
+  const secretKey = req.body.secretKey ? req.body.secretKey.trim() : "";
+  const masterPassword = req.body.masterPassword ? req.body.masterPassword.trim() : "";
+
+  const SYSTEM_SECRET = "viva-master-key-2025";
+  const MASTER_PASSWORD = "vivaadmin2025";
+
+  if (secretKey !== SYSTEM_SECRET || masterPassword !== MASTER_PASSWORD) {
+    return res.status(401).json({ msg: "Access Denied. Invalid credentials." });
+  }
+
+  try {
+    let user = await User.findOne({ role: "admin" });
+    if (!user) {
+      user = await User.findOne({ email: "admin@viva.com" });
+    }
+    if (!user) {
+      return res.status(404).json({ msg: "Admin account not found. Run: node backend/seed_users.js" });
+    }
+
+    const jwt = require("jsonwebtoken");
+    const payload = { user: { id: user.id, role: user.role, department: user.department } };
+    jwt.sign(payload, "secrettoken", { expiresIn: 360000 }, (err, token) => {
+      if (err) throw err;
+      res.json({ token, user: { id: user.id, name: user.name, role: user.role, department: user.department } });
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+// ======= END ADMIN BYPASS =======
+
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -58,10 +93,30 @@ app.post("/api/auth/register", async (req, res) => {
 
     await user.save();
 
-    const payload = { user: { id: user.id, role: user.role, department: user.department } };
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role,
+        department: user.department,
+        isSalesManager: user.isSalesManager,
+        isDepartmentHead: user.isDepartmentHead,
+        isManager: user.isManager
+      }
+    };
     jwt.sign(payload, "secrettoken", { expiresIn: 360000 }, (err, token) => {
       if (err) throw err;
-      res.json({ token, user: { id: user.id, name: user.name, role: user.role, department: user.department } });
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          department: user.department,
+          isSalesManager: user.isSalesManager,
+          isDepartmentHead: user.isDepartmentHead,
+          isManager: user.isManager
+        }
+      });
     });
   } catch (err) {
     console.error(err.message);
@@ -79,11 +134,78 @@ app.post("/api/auth/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid Credentials" });
 
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role,
+        department: user.department,
+        isSalesManager: user.isSalesManager,
+        isDepartmentHead: user.isDepartmentHead,
+        isManager: user.isManager
+      }
+    };
+    jwt.sign(payload, "secrettoken", { expiresIn: 360000 }, (err, token) => {
+      if (err) throw err;
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          department: user.department,
+          isSalesManager: user.isSalesManager,
+          isDepartmentHead: user.isDepartmentHead,
+          isManager: user.isManager
+        }
+      });
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Bypass Admin Login
+console.log(">>> Registering /api/auth/admin-bypass route...");
+app.get("/api/auth/admin-bypass", (req, res) => {
+  res.json({ msg: "Admin bypass route is registered!" });
+});
+app.post("/api/auth/admin-bypass", async (req, res) => {
+  const secretKey = req.body.secretKey ? req.body.secretKey.trim() : "";
+  const SYSTEM_SECRET = "viva-master-key-2025";
+
+  console.log("--- DEBUG ADMIN BYPASS ---");
+  console.log("Received Body:", req.body);
+  console.log("Received Key:", secretKey);
+  console.log("Expected Key:", SYSTEM_SECRET);
+  console.log("Match:", secretKey === SYSTEM_SECRET);
+  console.log("--------------------------");
+
+  try {
+    if (secretKey !== SYSTEM_SECRET) {
+      return res.status(401).json({ msg: `Invalid Key. Recv: '${secretKey}' vs Exp: '${SYSTEM_SECRET}'` });
+    }
+
+    // Find the Admin user
+    let user = await User.findOne({ role: "admin" });
+
+    // If no admin user exists, create a temporary one (failsafe)
+    if (!user) {
+      // Try to find by email
+      user = await User.findOne({ email: "admin@viva.com" });
+    }
+
+    if (!user) {
+      return res.status(404).json({ msg: "Admin account not found. Please seed the database." });
+    }
+
+    // Generate Token
     const payload = { user: { id: user.id, role: user.role, department: user.department } };
     jwt.sign(payload, "secrettoken", { expiresIn: 360000 }, (err, token) => {
       if (err) throw err;
       res.json({ token, user: { id: user.id, name: user.name, role: user.role, department: user.department } });
     });
+
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
@@ -172,8 +294,8 @@ app.put("/api/sales/:id", auth, async (req, res) => {
     let sale = await Sale.findById(req.params.id);
     if (!sale) return res.status(404).json({ msg: "Sale not found" });
 
-    // Check permissions: Admin OR Owner
-    if (req.user.role !== 'admin' && sale.salesPerson.toString() !== req.user.id) {
+    // Check permissions: Admin OR Sales Manager OR Owner
+    if (req.user.role !== 'admin' && !req.user.isSalesManager && sale.salesPerson.toString() !== req.user.id) {
       return res.status(401).json({ msg: "Not authorized" });
     }
 
@@ -192,8 +314,8 @@ app.put("/api/sales/:id", auth, async (req, res) => {
 app.get("/api/sales", auth, async (req, res) => {
   try {
     let query = {};
-    // If NOT admin, only see OWN sales
-    if (req.user.role !== 'admin') {
+    // If NOT admin AND NOT Department Head AND NOT Sales Manager, only see OWN sales
+    if (req.user.role !== 'admin' && !req.user.isDepartmentHead && !req.user.isSalesManager) {
       query = { salesPerson: req.user.id };
     }
 
@@ -212,8 +334,8 @@ app.delete("/api/sales/:id", auth, async (req, res) => {
     const sale = await Sale.findById(req.params.id);
     if (!sale) return res.status(404).json({ msg: "Sale not found" });
 
-    // Check permissions: Admin OR Owner
-    if (req.user.role !== 'admin' && sale.salesPerson.toString() !== req.user.id) {
+    // Check permissions: Admin OR Sales Manager OR Owner
+    if (req.user.role !== 'admin' && !req.user.isSalesManager && sale.salesPerson.toString() !== req.user.id) {
       return res.status(401).json({ msg: "Not authorized" });
     }
 

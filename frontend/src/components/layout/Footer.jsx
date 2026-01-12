@@ -6,7 +6,7 @@ const Footer = () => {
             <div className="float-end d-none d-sm-inline">
                 Something you want
             </div>
-            <strong>Copyright &copy; 2025 <a href="https://adminlte.io">MERN Portal</a>.</strong> All rights reserved.
+            <strong>VIVA Admin Portal.</strong> All rights reserved.
         </footer>
     );
 };

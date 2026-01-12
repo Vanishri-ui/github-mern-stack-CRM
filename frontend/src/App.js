@@ -10,6 +10,8 @@ import SupportModule from "./pages/SupportModule";
 import FinanceModule from "./pages/FinanceModule";
 import OperationsModule from "./pages/OperationsModule";
 import DocumentsPage from "./pages/DocumentsPage";
+import RolesPage from "./pages/RolesPage";
+
 
 import AdminLayout from "./components/layout/AdminLayout";
 
@@ -36,7 +38,9 @@ function App() {
       <SearchProvider>
         <BrowserRouter>
           <Routes>
+
             <Route path="/" element={<Login />} />
+
 
             {/* Main App Layout for Authenticated Users */}
             <Route element={<AdminLayout />}>
@@ -77,6 +81,9 @@ function App() {
 
               {/* Documents: ALL AUTHENTICATED */}
               <Route path="/documents" element={<DocumentsPage />} />
+
+              {/* Roles Hierarchy: ALL AUTHENTICATED */}
+              <Route path="/roles" element={<RolesPage />} />
             </Route>
 
             {/* Redirect old routes to dashboard for now */}

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
 const users = [
-    { name: 'Admin User', email: 'admin@viva.com', password: '123456', role: 'admin', department: 'general' },
+    { name: 'Admin User', email: 'admin@viva.com', password: '123456', role: 'admin', department: 'admin' },
     { name: 'Sales User', email: 'sales@viva.com', password: '123456', role: 'sales', department: 'sales' },
     { name: 'Ops User', email: 'ops@viva.com', password: '123456', role: 'ops', department: 'ops' },
     { name: 'Finance User', email: 'finance@viva.com', password: '123456', role: 'finance', department: 'finance' },
