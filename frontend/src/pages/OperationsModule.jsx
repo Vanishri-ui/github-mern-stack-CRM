@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { SearchContext } from '../context/SearchContext';
+import DepartmentDocuments from '../components/DepartmentDocuments';
 
 const OperationsModule = () => {
     const { user } = useContext(AuthContext);
@@ -41,8 +42,10 @@ const OperationsModule = () => {
         <section className="content-header">
             <div className="container-fluid">
                 <div className="row mb-2">
-                    <div className="col-sm-6"><h1>Order Execution (Operations)</h1></div>
-                    <div className="col-sm-6"></div>
+                    <div className="col-sm-6"><h1>Order Operations (Monitoring)</h1></div>
+                    <div className="col-sm-6 text-end">
+                        {/* READ ONLY MODE - No Create Button */}
+                    </div>
                 </div>
 
                 {/* STATS ROW */}
@@ -51,7 +54,7 @@ const OperationsModule = () => {
                         <div className="info-box shadow-sm">
                             <span className="info-box-icon bg-warning"><i className="bi bi-clock-history"></i></span>
                             <div className="info-box-content">
-                                <span className="info-box-text">Pending Work Orders</span>
+                                <span className="info-box-text">Pending Execution</span>
                                 <span className="info-box-number">{pendingOrders.length}</span>
                             </div>
                         </div>
@@ -60,7 +63,7 @@ const OperationsModule = () => {
                         <div className="info-box shadow-sm">
                             <span className="info-box-icon bg-success"><i className="bi bi-check-circle"></i></span>
                             <div className="info-box-content">
-                                <span className="info-box-text">Work Orders Done</span>
+                                <span className="info-box-text">Executed Orders</span>
                                 <span className="info-box-number">{executedOrders.length}</span>
                             </div>
                         </div>
@@ -79,7 +82,7 @@ const OperationsModule = () => {
                 {/* PENDING ORDERS */}
                 <div className="card card-primary card-outline">
                     <div className="card-header">
-                        <h3 className="card-title">Pending Orders <span className="badge bg-warning">{pendingOrders.length}</span></h3>
+                        <h3 className="card-title">Pending Orders (Monitoring)</h3>
                     </div>
                     <div className="card-body table-responsive p-0">
                         <table className="table table-hover">
@@ -89,8 +92,9 @@ const OperationsModule = () => {
                                     <th>Date</th>
                                     <th>Customer</th>
                                     <th>Product</th>
+                                    <th>Lines</th>
                                     <th>Amount</th>
-                                    <th>Action</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -102,7 +106,7 @@ const OperationsModule = () => {
                                         o.productName?.toLowerCase().includes(lower) ||
                                         o.amount?.toString().includes(lower)
                                     );
-                                }).length === 0 && <tr><td colSpan="6">No matching orders.</td></tr>}
+                                }).length === 0 && <tr><td colSpan="7">No matching orders.</td></tr>}
                                 {pendingOrders.filter(o => {
                                     if (!searchQuery) return true;
                                     const lower = searchQuery.toLowerCase();
@@ -117,12 +121,9 @@ const OperationsModule = () => {
                                         <td>{new Date(o.date).toLocaleDateString()}</td>
                                         <td>{o.customerName}</td>
                                         <td>{o.productName}</td>
+                                        <td>{o.serviceLines || '-'}</td>
                                         <td>${o.amount}</td>
-                                        <td>
-                                            <button className="btn btn-sm btn-primary" onClick={() => updateStatus(o._id, 'Executed')}>
-                                                <i className="bi bi-gear-wide-connected"></i> Execute Order
-                                            </button>
-                                        </td>
+                                        <td><span className="badge bg-warning">Pending</span></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -133,7 +134,7 @@ const OperationsModule = () => {
                 {/* HISTORY */}
                 <div className="card card-success card-outline">
                     <div className="card-header">
-                        <h3 className="card-title">Completed Work Orders <span className="badge bg-success">{executedOrders.length}</span></h3>
+                        <h3 className="card-title">Completed Work Orders</h3>
                         <div className="card-tools"><button type="button" className="btn btn-tool" data-lte-toggle="card-collapse"><i className="bi bi-dash"></i></button></div>
                     </div>
                     <div className="card-body table-responsive p-0">
@@ -143,6 +144,7 @@ const OperationsModule = () => {
                                     <th>Work Order #</th>
                                     <th>Customer</th>
                                     <th>Product</th>
+                                    <th>Lines</th>
                                     <th>Amount</th>
                                     <th>Status</th>
                                 </tr>
@@ -157,12 +159,19 @@ const OperationsModule = () => {
                                         <td><span className="badge bg-success">WO-{String(index + 1).padStart(4, '0')}</span></td>
                                         <td>{o.customerName}</td>
                                         <td>{o.productName}</td>
+                                        <td>{o.serviceLines || '-'}</td>
                                         <td>${o.amount}</td>
                                         <td><span className="badge bg-success">{o.status}</span></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+                {/* DOCUMENTS SECTION */}
+                <div className="row mt-4">
+                    <div className="col-12">
+                        <DepartmentDocuments department="ops" />
                     </div>
                 </div>
             </div>

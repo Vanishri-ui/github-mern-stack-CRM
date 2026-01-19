@@ -9,6 +9,7 @@ import SalesModule from "./pages/SalesModule";
 import SupportModule from "./pages/SupportModule";
 import FinanceModule from "./pages/FinanceModule";
 import OperationsModule from "./pages/OperationsModule";
+import ExecutionModule from "./pages/ExecutionModule"; // NEW
 import DocumentsPage from "./pages/DocumentsPage";
 import RolesPage from "./pages/RolesPage";
 
@@ -62,6 +63,13 @@ function App() {
               <Route path="/ops" element={
                 <RoleRoute allowedRoles={['ops', 'admin']}>
                   <OperationsModule />
+                </RoleRoute>
+              } />
+
+              {/* Execution: EXECUTION & ADMIN */}
+              <Route path="/execution" element={
+                <RoleRoute allowedRoles={['execution', 'admin']}>
+                  <ExecutionModule />
                 </RoleRoute>
               } />
 

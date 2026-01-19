@@ -6,12 +6,12 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ['admin', 'sales', 'tech', 'ops', 'finance', 'hr'],
+    enum: ['admin', 'sales', 'tech', 'ops', 'finance', 'hr', 'execution'],
     default: 'sales'
   },
   department: {
     type: String,
-    enum: ['sales', 'tech', 'general', 'ops', 'finance', 'hr', 'admin'],
+    enum: ['sales', 'tech', 'general', 'ops', 'finance', 'hr', 'admin', 'execution'],
     default: 'general'
   },
   isDepartmentHead: { type: Boolean, default: false }, // Can manage entire department

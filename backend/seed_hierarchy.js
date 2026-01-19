@@ -48,7 +48,7 @@ const users = [
         role: 'tech',
         department: 'tech',
         isDepartmentHead: false,
-        isManager: false
+        isManager: true  // PROMOTED TO MANAGER
     },
     {
         name: 'Suman',
@@ -57,7 +57,7 @@ const users = [
         role: 'tech',
         department: 'tech',
         isDepartmentHead: false,
-        isManager: false
+        isManager: true  // PROMOTED TO MANAGER
     }
 ];
 

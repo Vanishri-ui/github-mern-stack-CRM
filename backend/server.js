@@ -266,10 +266,9 @@ app.get("/api/users", auth, async (req, res) => {
 const Sale = require("./models/Sale");
 
 // Create Sale (Salesperson only usually, but Admin can too)
-// Create Sale (Salesperson only usually, but Admin can too)
 app.post("/api/sales", auth, async (req, res) => {
   try {
-    const { customerName, productName, amount, agentName, date } = req.body;
+    const { customerName, productName, amount, agentName, date, serviceLines } = req.body; // Added serviceLines
     const newSale = new Sale({
       customerName,
       productName,
@@ -277,6 +276,7 @@ app.post("/api/sales", auth, async (req, res) => {
       agentName, // Optional: Account Manager Name
       date: date || Date.now(),
       status: req.body.status || 'Pending Execution',
+      serviceLines, // Save field
       salesPerson: req.user.id
     });
     const savedSale = await newSale.save();
@@ -290,7 +290,7 @@ app.post("/api/sales", auth, async (req, res) => {
 // Update Sale (Edit)
 app.put("/api/sales/:id", auth, async (req, res) => {
   try {
-    const { customerName, productName, amount, agentName, date, status } = req.body;
+    const { customerName, productName, amount, agentName, date, status, serviceLines } = req.body; // Added serviceLines
     let sale = await Sale.findById(req.params.id);
     if (!sale) return res.status(404).json({ msg: "Sale not found" });
 
@@ -300,7 +300,7 @@ app.put("/api/sales/:id", auth, async (req, res) => {
     }
 
     sale = await Sale.findByIdAndUpdate(req.params.id,
-      { $set: { customerName, productName, amount, agentName, date, status } },
+      { $set: { customerName, productName, amount, agentName, date, status, serviceLines } },
       { new: true }
     );
     res.json(sale);
@@ -354,12 +354,19 @@ const Ticket = require("./models/Ticket");
 // Raise Ticket (Anyone)
 app.post("/api/tickets", auth, async (req, res) => {
   try {
-    const { title, description, priority } = req.body;
+    const { title, description, priority, linkedSale, productName, serviceLines } = req.body;
+
+    // Validate linkedSale: Must be valid ObjectId or null. Empty string throws CastError.
+    const saleLink = (linkedSale && linkedSale.length === 24) ? linkedSale : null;
+
     const newTicket = new Ticket({
       title,
       description,
       priority,
-      raisedBy: req.user.id
+      raisedBy: req.user.id,
+      linkedSale: saleLink,   // Save sanitized link
+      productName,  // Save snapshot
+      serviceLines  // Save snapshot
     });
     const savedTicket = await newTicket.save();
     res.json(savedTicket);
@@ -421,6 +428,74 @@ app.post("/api/leaves", auth, async (req, res) => {
     res.json(savedLeave);
   } catch (err) {
     console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// --- INVOICE ROUTES (FINANCE) ---
+const Invoice = require('./models/Invoice');
+// Sale is already imported above
+
+// Create Invoice
+app.post("/api/invoices", auth, async (req, res) => {
+  try {
+    const { saleId, items, totalAmount, dueDate } = req.body;
+
+    // Generate Invoice Number (Simple timestamp based or sequential)
+    const count = await Invoice.countDocuments();
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+
+    // Fetch Sale to get customer name
+    const sale = await Sale.findById(saleId);
+    if (!sale) return res.status(404).json({ msg: "Sale not found" });
+
+    const newInvoice = new Invoice({
+      sale: saleId,
+      invoiceNumber,
+      customerName: sale.customerName,
+      items,
+      totalAmount,
+      dueDate
+    });
+
+    await newInvoice.save();
+    res.json(newInvoice);
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Get All Invoices
+app.get("/api/invoices", auth, async (req, res) => {
+  try {
+    const invoices = await Invoice.find().sort({ date: -1 });
+    res.json(invoices);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Update Invoice Status (Mark Paid)
+app.put("/api/invoices/:id", auth, async (req, res) => {
+  try {
+    const { status, paymentMethod } = req.body;
+    const updateFields = { status };
+    if (status === 'Paid') {
+      updateFields.paymentDate = Date.now();
+      updateFields.paymentMethod = paymentMethod || 'Bank Transfer';
+    }
+
+    const invoice = await Invoice.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateFields },
+      { new: true }
+    );
+    res.json(invoice);
+  } catch (err) {
+    console.error(err.message);
     res.status(500).send("Server Error");
   }
 });

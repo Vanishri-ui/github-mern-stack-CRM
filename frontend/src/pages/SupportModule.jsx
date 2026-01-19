@@ -2,11 +2,13 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { SearchContext } from '../context/SearchContext';
+import DepartmentDocuments from '../components/DepartmentDocuments';
 
 const SupportModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [tickets, setTickets] = useState([]);
+    const [sales, setSales] = useState([]); // For dropdown
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
 
@@ -14,25 +16,41 @@ const SupportModule = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('Medium');
+    // New Fields
+    const [linkedSale, setLinkedSale] = useState('');
+    const [productName, setProductName] = useState('');
+    const [serviceLines, setServiceLines] = useState('');
 
     useEffect(() => {
-        fetchTickets();
+        fetchData();
     }, []);
 
-    const fetchTickets = async () => {
+    const fetchData = async () => {
         try {
-            const res = await axios.get('/api/tickets');
-            setTickets(res.data);
+            const [ticketRes, saleRes] = await Promise.all([
+                axios.get('/api/tickets'),
+                axios.get('/api/sales')
+            ]);
+            setTickets(ticketRes.data);
+            setSales(saleRes.data);
             setLoading(false);
         } catch (e) { console.error(e); setLoading(false); }
     };
 
+    const fetchTickets = async () => { /* Kept for refresh after update */
+        try { const res = await axios.get('/api/tickets'); setTickets(res.data); } catch (e) { }
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('/api/tickets', { title, description, priority });
+            await axios.post('/api/tickets', {
+                title, description, priority,
+                linkedSale, productName, serviceLines
+            });
             setShowModal(false);
             setTitle(''); setDescription('');
+            setLinkedSale(''); setProductName(''); setServiceLines('');
             fetchTickets();
         } catch (e) { alert('Failed to create ticket'); }
     };
@@ -73,6 +91,7 @@ const SupportModule = () => {
                                 <tr>
                                     <th>Status</th>
                                     <th>Subject</th>
+                                    <th>Product Reference</th> { /* NEW */}
                                     <th>Priority</th>
                                     <th>Raised By</th>
                                     <th>Actions</th>
@@ -102,6 +121,14 @@ const SupportModule = () => {
                                             <small className="text-muted">{t.description}</small>
                                         </td>
                                         <td>
+                                            {t.productName ? (
+                                                <div>
+                                                    <span className="fw-bold">{t.productName}</span><br />
+                                                    <small className="text-muted">{t.serviceLines} Lines</small>
+                                                </div>
+                                            ) : <span className="text-muted">-</span>}
+                                        </td>
+                                        <td>
                                             <span className={`badge ${t.priority === 'High' ? 'bg-danger' : t.priority === 'Medium' ? 'bg-info' : 'bg-secondary'}`}>
                                                 {t.priority}
                                             </span>
@@ -121,6 +148,13 @@ const SupportModule = () => {
                     </div>
                 </div>
 
+                {/* DOCUMENTS SECTION */}
+                <div className="row mt-4">
+                    <div className="col-12">
+                        <DepartmentDocuments department="tech" />
+                    </div>
+                </div>
+
                 {showModal && (
                     <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
                         <div className="modal-dialog">
@@ -131,8 +165,46 @@ const SupportModule = () => {
                                 </div>
                                 <form onSubmit={handleSubmit}>
                                     <div className="modal-body">
+                                        {/* CUSTOMER/SALE SELECTION */}
                                         <div className="mb-3">
-                                            <label>Subject</label>
+                                            <label>Select Existing Customer (Product)</label>
+                                            <select className="form-select" onChange={e => {
+                                                const saleId = e.target.value;
+                                                const sale = sales.find(s => s._id === saleId);
+                                                if (sale) {
+                                                    setLinkedSale(saleId);
+                                                    setProductName(sale.productName);
+                                                    setServiceLines(sale.serviceLines || 'N/A');
+                                                    setTitle(`Issue with ${sale.productName} (${sale.customerName})`); // Auto-suggest title
+                                                } else {
+                                                    setLinkedSale('');
+                                                    setProductName('');
+                                                    setServiceLines('');
+                                                }
+                                            }}>
+                                                <option value="">-- Select Customer --</option>
+                                                {sales.map(s => (
+                                                    <option key={s._id} value={s._id}>
+                                                        {s.customerName} - {s.productName} ({s.date ? new Date(s.date).toLocaleDateString() : 'No Date'})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* AUTO-FILLED DETAILS */}
+                                        <div className="row">
+                                            <div className="col-md-6 mb-3">
+                                                <label>Product</label>
+                                                <input className="form-control" value={productName} readOnly disabled />
+                                            </div>
+                                            <div className="col-md-6 mb-3">
+                                                <label>No. of Lines</label>
+                                                <input className="form-control" value={serviceLines} readOnly disabled />
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-3">
+                                            <label>Subject / Issue Title</label>
                                             <input className="form-control" value={title} onChange={e => setTitle(e.target.value)} required />
                                         </div>
                                         <div className="mb-3">

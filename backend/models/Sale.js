@@ -12,6 +12,7 @@ const SaleSchema = new mongoose.Schema({
         enum: ['Pending Execution', 'Executed', 'Billed', 'Cancelled'],
         default: 'Pending Execution'
     },
+    serviceLines: { type: String }, // Number of lines or details
     // Reminder Fields
     followUpDate: { type: Date },
     followUpNotes: { type: String }

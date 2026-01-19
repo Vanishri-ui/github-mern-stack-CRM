@@ -41,7 +41,15 @@ const Dashboard = () => {
             icon: 'bi-gear-wide-connected',
             color: 'bg-warning',
             link: '/ops',
-            desc: 'Order execution and fulfillment.'
+            desc: 'Monitor Order Status (Read Only).'
+        },
+        {
+            title: 'Execution Team',
+            head: 'Execution Lead',
+            icon: 'bi-lightning-charge',
+            color: 'bg-danger',
+            link: '/execution',
+            desc: 'Create & Execute Work Orders.'
         }
     ];
 

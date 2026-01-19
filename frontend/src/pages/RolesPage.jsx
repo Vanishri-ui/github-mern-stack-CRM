@@ -62,12 +62,12 @@ const RolesPage = () => {
                                     <li className="list-group-item">
                                         <i className="bi bi-person-circle text-primary me-2"></i>
                                         <strong>Subramaniyan</strong> <br />
-                                        <small className="text-muted ms-4">Support Executive</small>
+                                        <small className="text-muted ms-4">Support Manager</small>
                                     </li>
                                     <li className="list-group-item">
                                         <i className="bi bi-person-circle text-primary me-2"></i>
                                         <strong>Suman</strong> <br />
-                                        <small className="text-muted ms-4">Support Executive</small>
+                                        <small className="text-muted ms-4">Support Manager</small>
                                     </li>
                                 </ul>
                             </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { SearchContext } from '../context/SearchContext';
+import DepartmentDocuments from '../components/DepartmentDocuments';
 
 const SalesModule = () => {
     const { user } = useContext(AuthContext);
@@ -414,8 +415,15 @@ const SalesModule = () => {
                     </div >
                 )}
 
-            </div >
-        </section >
+                {/* DOCUMENTS SECTION */}
+                <div className="row mt-4">
+                    <div className="col-12">
+                        <DepartmentDocuments department="sales" />
+                    </div>
+                </div>
+
+            </div>
+        </section>
     );
 };
 

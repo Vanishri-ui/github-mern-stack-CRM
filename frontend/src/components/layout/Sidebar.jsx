@@ -39,12 +39,7 @@ const Sidebar = () => {
                         <li className="nav-header">DEPARTMENTS</li>
 
                         {/* Documents Link: All Users */}
-                        <li className="nav-item">
-                            <Link to="/documents" className={`nav-link ${location.pathname === '/documents' ? 'active' : ''}`}>
-                                <i className="nav-icon bi bi-folder2-open"></i>
-                                <p>Documents</p>
-                            </Link>
-                        </li>
+                        {/* Documents Link Removed - Now distributed in modules */}
 
                         {/* Sales Link: Admin & Sales */}
                         {user && (user.role === 'admin' || user.role === 'sales') && (
