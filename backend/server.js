@@ -72,9 +72,10 @@ const upload = multer({ storage });
 
 // MongoDB Connection
 // MongoDB Connection
+// MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/mern_crm")
-  .then(() => console.log("MongoDB Connected (mern_crm)"))
+  .connect(process.env.MONGO_URI || "mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0")
+  .then(() => console.log("MongoDB Connected (Cloud - mern_crm)"))
   .catch((err) => console.log(err));
 
 // --- AUTH ROUTES ---
