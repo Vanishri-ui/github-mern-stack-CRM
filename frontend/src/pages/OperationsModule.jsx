@@ -34,6 +34,32 @@ const OperationsModule = () => {
         return `WO-${String(index + 1).padStart(4, '0')}`;
     };
 
+    // Modal State
+    const [showModal, setShowModal] = useState(false);
+    const [formData, setFormData] = useState({
+        customerName: '',
+        productName: '',
+        amount: 0,
+        serviceLines: '',
+        date: new Date().toISOString().split('T')[0]
+    });
+
+    const handleCreateOrder = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/api/sales', {
+                ...formData,
+                status: 'Pending Execution', // Default for Ops
+                agentName: user.name
+            });
+            setShowModal(false);
+            fetchOrders();
+            setFormData({ customerName: '', productName: '', amount: 0, serviceLines: '', date: new Date().toISOString().split('T')[0] });
+        } catch (err) {
+            alert('Failed to create work order');
+        }
+    };
+
     // Filter Logic
     const pendingOrders = orders.filter(o => o.status === 'Pending Execution' || !o.status);
     const executedOrders = orders.filter(o => o.status === 'Executed' || o.status === 'Billed');
@@ -44,7 +70,9 @@ const OperationsModule = () => {
                 <div className="row mb-2">
                     <div className="col-sm-6"><h1>Order Operations (Monitoring)</h1></div>
                     <div className="col-sm-6 text-end">
-                        {/* READ ONLY MODE - No Create Button */}
+                        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                            <i className="bi bi-plus-lg"></i> Create Work Order
+                        </button>
                     </div>
                 </div>
 
@@ -95,6 +123,7 @@ const OperationsModule = () => {
                                     <th>Lines</th>
                                     <th>Amount</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,7 +135,7 @@ const OperationsModule = () => {
                                         o.productName?.toLowerCase().includes(lower) ||
                                         o.amount?.toString().includes(lower)
                                     );
-                                }).length === 0 && <tr><td colSpan="7">No matching orders.</td></tr>}
+                                }).length === 0 && <tr><td colSpan="8">No matching orders.</td></tr>}
                                 {pendingOrders.filter(o => {
                                     if (!searchQuery) return true;
                                     const lower = searchQuery.toLowerCase();
@@ -124,6 +153,11 @@ const OperationsModule = () => {
                                         <td>{o.serviceLines || '-'}</td>
                                         <td>${o.amount}</td>
                                         <td><span className="badge bg-warning">Pending</span></td>
+                                        <td>
+                                            <button className="btn btn-sm btn-success" onClick={() => updateStatus(o._id, 'Executed')}>
+                                                Execute
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -174,6 +208,44 @@ const OperationsModule = () => {
                         <DepartmentDocuments department="ops" />
                     </div>
                 </div>
+
+                {/* CREATE MODAL */}
+                {showModal && (
+                    <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog">
+                            <div className="modal-content">
+                                <div className="modal-header">
+                                    <h5 className="modal-title">Create New Work Order</h5>
+                                    <button className="btn-close" onClick={() => setShowModal(false)}></button>
+                                </div>
+                                <form onSubmit={handleCreateOrder}>
+                                    <div className="modal-body">
+                                        <div className="mb-3">
+                                            <label>Customer Name</label>
+                                            <input className="form-control" required value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label>Project/Product</label>
+                                            <input className="form-control" required value={formData.productName} onChange={e => setFormData({ ...formData, productName: e.target.value })} />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label>Service Lines / Details</label>
+                                            <textarea className="form-control" value={formData.serviceLines} onChange={e => setFormData({ ...formData, serviceLines: e.target.value })}></textarea>
+                                        </div>
+                                        <div className="mb-3">
+                                            <label>Est. Amount</label>
+                                            <input type="number" className="form-control" value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })} />
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                                        <button type="submit" className="btn btn-primary">Create Order</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );

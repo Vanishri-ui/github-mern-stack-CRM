@@ -6,11 +6,26 @@ const Sidebar = () => {
     const { user } = useContext(AuthContext);
     const location = useLocation();
 
+    // Dynamic Brand Name
+    const getBrandName = () => {
+        if (!user) return 'VIVA CRM';
+        if (user.role === 'admin') return 'VIVA Admin';
+
+        switch (user.department) {
+            case 'sales': return 'VIVA Sales';
+            case 'ops': return 'VIVA Operations';
+            case 'tech': return 'VIVA Support';
+            case 'finance': return 'VIVA Finance';
+            case 'hr': return 'VIVA HR';
+            default: return 'VIVA CRM';
+        }
+    };
+
     return (
         <aside className="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
             <div className="sidebar-brand">
                 <Link to="/dashboard" className="brand-link">
-                    <span className="brand-text fw-light">VIVA Admin</span>
+                    <span className="brand-text fw-light">{getBrandName()}</span>
                 </Link>
             </div>
             <div className="sidebar-wrapper">
@@ -51,11 +66,21 @@ const Sidebar = () => {
                             </li>
                         )}
 
-                        {/* Ops Link: Admin & Ops */}
+                        {/* Ops Link: Admin & Ops (Renaming to Monitoring as per code) */}
                         {user && (user.role === 'admin' || user.role === 'ops') && (
                             <li className="nav-item">
                                 <Link to="/ops" className={`nav-link ${location.pathname === '/ops' ? 'active' : ''}`}>
                                     <i className="nav-icon bi bi-gear-wide-connected"></i>
+                                    <p>Monitoring (Ops)</p>
+                                </Link>
+                            </li>
+                        )}
+
+                        {/* Order Execution Link: Admin & Execution (Separate Team) */}
+                        {user && (user.role === 'admin' || user.role === 'execution') && (
+                            <li className="nav-item">
+                                <Link to="/execution" className={`nav-link ${location.pathname === '/execution' ? 'active' : ''}`}>
+                                    <i className="nav-icon bi bi-play-circle-fill"></i>
                                     <p>Order Execution</p>
                                 </Link>
                             </li>

@@ -162,6 +162,16 @@ const FinanceModule = () => {
                 </ul>
 
                 {/* CONTENT */}
+                <div className="text-end mb-2">
+                    <button className="btn btn-primary" onClick={() => {
+                        setSelectedSale(null); // Clear selected sale for new manual creation
+                        setInvoiceItems([{ description: '', amount: 0 }]); // Reset items
+                        setShowInvoiceModal(true);
+                    }}>
+                        <i className="bi bi-plus-lg"></i> Create New Invoice
+                    </button>
+                </div>
+
                 {activeTab === 'billing' && (
                     <div className="card">
                         <div className="card-header bg-warning"><h3 className="card-title">Ready for Billing</h3></div>
@@ -227,34 +237,82 @@ const FinanceModule = () => {
                         <div className="modal-dialog">
                             <div className="modal-content">
                                 <div className="modal-header">
-                                    <h5 className="modal-title">Generate Invoice</h5>
+                                    <h5 className="modal-title">{selectedSale ? 'Generate Invoice' : 'Create New Invoice'}</h5>
                                     <button className="btn-close" onClick={() => setShowInvoiceModal(false)}></button>
                                 </div>
                                 <div className="modal-body">
-                                    <p><strong>Customer:</strong> {selectedSale?.customerName}</p>
+                                    {selectedSale ? (
+                                        <p><strong>Customer:</strong> {selectedSale.customerName}</p>
+                                    ) : (
+                                        <div className="mb-3">
+                                            <label>Customer Name</label>
+                                            <input className="form-control" placeholder="Enter Customer Name" id="newCustomerName" />
+                                        </div>
+                                    )}
                                     <hr />
                                     <h6>Line Items</h6>
                                     {invoiceItems.map((item, idx) => (
                                         <div key={idx} className="d-flex mb-2">
-                                            <input className="form-control me-2" value={item.description} onChange={e => {
+                                            <input className="form-control me-2" placeholder="Description" value={item.description} onChange={e => {
                                                 const newItems = [...invoiceItems];
                                                 newItems[idx].description = e.target.value;
                                                 setInvoiceItems(newItems);
                                             }} />
-                                            <input type="number" className="form-control" style={{ width: '100px' }} value={item.amount} onChange={e => {
+                                            <input type="number" className="form-control" style={{ width: '100px' }} placeholder="Amt" value={item.amount} onChange={e => {
                                                 const newItems = [...invoiceItems];
                                                 newItems[idx].amount = Number(e.target.value);
                                                 setInvoiceItems(newItems);
                                             }} />
                                         </div>
                                     ))}
+                                    <button className="btn btn-sm btn-link" onClick={() => setInvoiceItems([...invoiceItems, { description: '', amount: 0 }])}>+ Add Item</button>
+
                                     <div className="mt-3 text-end">
                                         <h5>Total: ${invoiceItems.reduce((a, b) => a + Number(b.amount), 0)}</h5>
                                     </div>
                                 </div>
                                 <div className="modal-footer">
                                     <button className="btn btn-secondary" onClick={() => setShowInvoiceModal(false)}>Cancel</button>
-                                    <button className="btn btn-success" onClick={createInvoice}>Create Invoice</button>
+                                    <button className="btn btn-success" onClick={async () => {
+                                        // Custom Logic for Creating Invoice
+                                        const total = invoiceItems.reduce((acc, item) => acc + Number(item.amount), 0);
+                                        try {
+                                            let saleIdToUse = selectedSale ? selectedSale._id : null;
+
+                                            // If no sale selected, create a dummy sale first
+                                            if (!saleIdToUse) {
+                                                const custName = document.getElementById('newCustomerName').value;
+                                                if (!custName) return alert('Customer Name Required');
+
+                                                const saleRes = await axios.post('/api/sales', {
+                                                    customerName: custName,
+                                                    productName: 'Direct Invoice',
+                                                    amount: total,
+                                                    status: 'Billed',
+                                                    agentName: user.name,
+                                                    date: new Date()
+                                                });
+                                                saleIdToUse = saleRes.data._id;
+                                            }
+
+                                            await axios.post('/api/invoices', {
+                                                saleId: saleIdToUse,
+                                                items: invoiceItems,
+                                                totalAmount: total,
+                                                dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                                            });
+
+                                            if (selectedSale) {
+                                                await axios.put(`/api/sales/${selectedSale._id}`, { status: 'Billed' });
+                                            }
+
+                                            setShowInvoiceModal(false);
+                                            fetchData();
+                                            fetchInvoices();
+                                            setActiveTab('invoices');
+                                            alert('Invoice Generated Successfully');
+                                        } catch (e) { console.error(e); alert('Failed'); }
+                                    }}>Create Invoice</button>
                                 </div>
                             </div>
                         </div>
