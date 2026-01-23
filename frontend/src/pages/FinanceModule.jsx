@@ -11,6 +11,7 @@ const FinanceModule = () => {
     const [invoices, setInvoices] = useState([]);
     const [activeTab, setActiveTab] = useState('revenue'); // revenue, am_perf, docs
     const [loading, setLoading] = useState(true);
+    const [perfFilter, setPerfFilter] = useState('All'); // All, Today, Month
 
     useEffect(() => {
         fetchData();
@@ -42,6 +43,17 @@ const FinanceModule = () => {
         // Only count 'Paid' sales as performance
         if (curr.status !== 'Paid') return acc;
 
+        // Date Filtering based on Invoice Payment Date
+        const linkedInv = invoices.find(inv => inv.sale === curr._id);
+        const pDate = linkedInv?.paymentDate ? new Date(linkedInv.paymentDate) : new Date(curr.date);
+        const today = new Date();
+
+        if (perfFilter === 'Today') {
+            if (pDate.toLocaleDateString() !== today.toLocaleDateString()) return acc;
+        } else if (perfFilter === 'Month') {
+            if (pDate.getMonth() !== today.getMonth() || pDate.getFullYear() !== today.getFullYear()) return acc;
+        }
+
         const amName = curr.agentName || curr.salesPerson?.name || 'Unassigned';
         if (!acc[amName]) {
             acc[amName] = { name: amName, revenue: 0, mrc: 0, recharge: 0, customers: new Set(), salesList: [] };
@@ -54,7 +66,8 @@ const FinanceModule = () => {
             acc[amName].salesList.push({
                 customer: curr.customerName,
                 amount: Number(curr.amount) || 0,
-                mrc: Number(curr.mrc) || 0
+                mrc: Number(curr.mrc) || 0,
+                date: pDate.toLocaleDateString()
             });
         }
         return acc;
@@ -177,6 +190,14 @@ const FinanceModule = () => {
                         {/* AM PERFORMANCE REPORT VIEW */}
                         {activeTab === 'am_perf' && (
                             <div className="table-responsive">
+                                <div className="bg-light p-2 border-bottom d-flex justify-content-between align-items-center">
+                                    <span className="fw-bold small text-muted text-uppercase ms-2">Performance Period: {perfFilter}</span>
+                                    <div className="btn-group btn-group-sm me-2">
+                                        <button className={`btn btn-outline-secondary ${perfFilter === 'Today' ? 'active' : ''}`} onClick={() => setPerfFilter('Today')}>Today</button>
+                                        <button className={`btn btn-outline-secondary ${perfFilter === 'Month' ? 'active' : ''}`} onClick={() => setPerfFilter('Month')}>This Month</button>
+                                        <button className={`btn btn-outline-secondary ${perfFilter === 'All' ? 'active' : ''}`} onClick={() => setPerfFilter('All')}>All Time</button>
+                                    </div>
+                                </div>
                                 <table className="table table-bordered table-sm align-middle mb-0" style={{ fontSize: '0.9rem' }}>
                                     <thead className="table-dark text-center">
                                         <tr>

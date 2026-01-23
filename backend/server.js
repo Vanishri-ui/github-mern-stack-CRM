@@ -492,6 +492,25 @@ app.get("/api/invoices", auth, async (req, res) => {
   }
 });
 
+// Delete Invoice (Admin or Billing)
+app.delete("/api/invoices/:id", auth, async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) return res.status(404).json({ msg: "Invoice not found" });
+
+    // Mark sale back as 'Executed' so it can be re-billed
+    if (invoice.sale) {
+      await Sale.findByIdAndUpdate(invoice.sale, { status: 'Executed' });
+    }
+
+    await Invoice.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Invoice removed" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
 // Update Invoice Status (Mark Paid)
 app.put("/api/invoices/:id", auth, async (req, res) => {
   try {

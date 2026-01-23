@@ -95,8 +95,19 @@ const BillingModule = () => {
         if (window.confirm('Mark this invoice as PAID?')) {
             try {
                 await axios.put(`/api/invoices/${id}`, { status: 'Paid' });
+                fetchData(); // Refresh sales status
                 fetchInvoices();
             } catch (e) { alert('Error updating status'); }
+        }
+    };
+
+    const deleteInvoice = async (id) => {
+        if (window.confirm('Are you sure you want to DELETE this invoice? The order will go back to the Billing Queue.')) {
+            try {
+                await axios.delete(`/api/invoices/${id}`);
+                fetchData();
+                fetchInvoices();
+            } catch (e) { alert('Error deleting invoice'); }
         }
     };
 
@@ -243,6 +254,7 @@ const BillingModule = () => {
                                             <th>Date</th>
                                             <th>Customer Name</th>
                                             <th>Status</th>
+                                            <th>Payment Info</th>
                                             <th>Amount</th>
                                             <th>Actions</th>
                                         </tr>
@@ -257,14 +269,20 @@ const BillingModule = () => {
                                                     <td className="text-center">{new Date(inv.date).toLocaleDateString()}</td>
                                                     <td>{inv.customerName}</td>
                                                     <td className="text-center">
-                                                        <span className={`badge ${inv.status === 'Paid' ? 'bg-success' : 'bg-danger'}`}>{inv.status}</span>
+                                                        <span className={`badge ${inv.status === 'Paid' ? 'bg-success' : 'bg-danger shadow-none'}`}>
+                                                            {inv.status === 'Paid' ? 'PAID' : 'UNPAID'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-center small text-muted">
+                                                        {inv.status === 'Paid' ? `Paid on ${new Date(inv.paymentDate).toLocaleDateString()}` : 'Payment Pending'}
                                                     </td>
                                                     <td className="text-end fw-bold">${inv.totalAmount.toLocaleString()}</td>
                                                     <td className="text-center">
-                                                        <button className="btn btn-sm btn-info me-1 shadow-sm text-white" onClick={() => handlePrintView(inv)} title="Print/View"><i className="bi bi-printer"></i></button>
+                                                        <button className="btn btn-xs btn-info me-1 shadow-sm text-white" onClick={() => handlePrintView(inv)} title="Print/View"><i className="bi bi-printer"></i></button>
                                                         {inv.status !== 'Paid' && (
-                                                            <button className="btn btn-sm btn-outline-success shadow-sm" onClick={() => markPaid(inv._id)} title="Mark Paid"><i className="bi bi-check-lg"></i></button>
+                                                            <button className="btn btn-xs btn-success me-1 shadow-sm" onClick={() => markPaid(inv._id)} title="Mark Paid"><i className="bi bi-check-lg"></i></button>
                                                         )}
+                                                        <button className="btn btn-xs btn-outline-danger shadow-sm" onClick={() => deleteInvoice(inv._id)} title="Delete Invoice"><i className="bi bi-trash"></i></button>
                                                     </td>
                                                 </tr>
                                             ))
