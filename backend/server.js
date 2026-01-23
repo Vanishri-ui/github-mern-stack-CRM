@@ -270,15 +270,27 @@ const Sale = require("./models/Sale");
 // Create Sale (Salesperson only usually, but Admin can too)
 app.post("/api/sales", auth, async (req, res) => {
   try {
-    const { customerName, productName, amount, agentName, date, serviceLines } = req.body; // Added serviceLines
+    const {
+      customerName, productName, amount, agentName, date, status,
+      serviceLines, orderType, mrc, initialRecharge, numberOfLines,
+      remarks, workOrderNumber, virtualNumber
+    } = req.body;
+
     const newSale = new Sale({
       customerName,
       productName,
       amount,
-      agentName, // Optional: Account Manager Name
+      agentName,
       date: date || Date.now(),
-      status: req.body.status || 'Pending Execution',
-      serviceLines, // Save field
+      status: status || 'Pending Execution',
+      serviceLines,
+      orderType,
+      mrc,
+      initialRecharge,
+      numberOfLines,
+      remarks,
+      workOrderNumber,
+      virtualNumber,
       salesPerson: req.user.id
     });
     const savedSale = await newSale.save();
@@ -302,7 +314,7 @@ app.put("/api/sales/:id", auth, async (req, res) => {
     }
 
     sale = await Sale.findByIdAndUpdate(req.params.id,
-      { $set: { customerName, productName, amount, agentName, date, status, serviceLines } },
+      { $set: req.body }, // Simplified: allow all body fields to be updated
       { new: true }
     );
     res.json(sale);
@@ -495,6 +507,12 @@ app.put("/api/invoices/:id", auth, async (req, res) => {
       { $set: updateFields },
       { new: true }
     );
+
+    // Sync status to Sale
+    if (status === 'Paid' && invoice.sale) {
+      await Sale.findByIdAndUpdate(invoice.sale, { status: 'Paid' });
+    }
+
     res.json(invoice);
   } catch (err) {
     console.error(err.message);

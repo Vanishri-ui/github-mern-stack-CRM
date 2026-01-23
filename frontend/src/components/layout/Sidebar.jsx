@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -10,100 +10,60 @@ const Sidebar = () => {
     const getBrandName = () => {
         if (!user) return 'VIVA CRM';
         if (user.role === 'admin') return 'VIVA Admin';
-
         switch (user.department) {
             case 'sales': return 'VIVA Sales';
-            case 'ops': return 'VIVA Operations';
             case 'tech': return 'VIVA Support';
             case 'finance': return 'VIVA Finance';
-            case 'hr': return 'VIVA HR';
+            case 'execution': return 'VIVA Execution';
             default: return 'VIVA CRM';
         }
     };
+
+    const navItems = [
+        { label: 'Dashboard', path: '/dashboard', icon: 'bi-speedometer2', roles: ['admin', 'sales', 'execution', 'finance', 'tech'] }, // All roles can see dashboard
+        { label: 'Sales', path: '/sales', icon: 'bi-currency-dollar', roles: ['admin', 'sales'] },
+        { label: 'Execution', path: '/execution', icon: 'bi-play-circle-fill', roles: ['admin', 'execution'] },
+        { label: 'Financial Revenue', path: '/finance', icon: 'bi-database-fill-check', roles: ['admin', 'finance'] },
+        { label: 'Billing & Invoicing', path: '/billing', icon: 'bi-receipt-cutoff', roles: ['admin', 'billing', 'finance'] },
+        { label: 'Support', path: '/support', icon: 'bi-headset', roles: ['admin', 'tech'] },
+    ];
 
     return (
         <aside className="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
             <div className="sidebar-brand">
                 <Link to="/dashboard" className="brand-link">
-                    <span className="brand-text fw-light">{getBrandName()}</span>
+                    <span className="brand-text fw-light text-uppercase tracking-wider">{getBrandName()}</span>
                 </Link>
             </div>
             <div className="sidebar-wrapper">
                 <nav className="mt-2">
-                    <ul className="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
-                        {/* Admin sees Dashboard */}
-                        {user && user.role === 'admin' && (
-                            <li className="nav-item">
-                                <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
-                                    <i className="nav-icon bi bi-speedometer"></i>
-                                    <p>Dashboard</p>
+                    <ul className="nav sidebar-menu flex-column" role="menu">
+                        {navItems.filter(item => !item.roles || item.roles.includes(user?.role)).map((item, idx) => (
+                            <li key={idx} className="nav-item">
+                                <Link to={item.path} className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}>
+                                    <i className={`nav-icon bi ${item.icon}`}></i>
+                                    <p>{item.label}</p>
                                 </Link>
                             </li>
-                        )}
+                        ))}
 
-                        {/* Roles & Team Link: Admin or Heads */}
+                        {/* ADMINISTRATION SECTION */}
                         {(user?.role === 'admin' || user?.isDepartmentHead || user?.isSalesManager) && (
-                            <li className="nav-item">
-                                <Link to="/roles" className="nav-link">
-                                    <i className="nav-icon bi bi-diagram-3"></i>
-                                    <p>Roles & Team</p>
-                                </Link>
-                            </li>
-                        )}
-
-                        <li className="nav-header">DEPARTMENTS</li>
-
-                        {/* Documents Link: All Users */}
-                        {/* Documents Link Removed - Now distributed in modules */}
-
-                        {/* Sales Link: Admin & Sales */}
-                        {user && (user.role === 'admin' || user.role === 'sales') && (
-                            <li className="nav-item">
-                                <Link to="/sales" className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`}>
-                                    <i className="nav-icon bi bi-currency-dollar"></i>
-                                    <p>Sales Order</p>
-                                </Link>
-                            </li>
-                        )}
-
-                        {/* Ops Link: Admin & Ops (Renaming to Monitoring as per code) */}
-                        {user && (user.role === 'admin' || user.role === 'ops') && (
-                            <li className="nav-item">
-                                <Link to="/ops" className={`nav-link ${location.pathname === '/ops' ? 'active' : ''}`}>
-                                    <i className="nav-icon bi bi-gear-wide-connected"></i>
-                                    <p>Monitoring (Ops)</p>
-                                </Link>
-                            </li>
-                        )}
-
-                        {/* Order Execution Link: Admin & Execution (Separate Team) */}
-                        {user && (user.role === 'admin' || user.role === 'execution') && (
-                            <li className="nav-item">
-                                <Link to="/execution" className={`nav-link ${location.pathname === '/execution' ? 'active' : ''}`}>
-                                    <i className="nav-icon bi bi-play-circle-fill"></i>
-                                    <p>Order Execution</p>
-                                </Link>
-                            </li>
-                        )}
-
-                        {/* Support Link: Admin & Tech */}
-                        {user && (user.role === 'admin' || user.role === 'tech') && (
-                            <li className="nav-item">
-                                <Link to="/support" className={`nav-link ${location.pathname === '/support' ? 'active' : ''}`}>
-                                    <i className="nav-icon bi bi-ticket-detailed"></i>
-                                    <p>Support</p>
-                                </Link>
-                            </li>
-                        )}
-
-                        {/* Finance Link: Admin & Finance */}
-                        {user && (user.role === 'admin' || user.role === 'finance') && (
-                            <li className="nav-item">
-                                <Link to="/finance" className={`nav-link ${location.pathname === '/finance' ? 'active' : ''}`}>
-                                    <i className="nav-icon bi bi-cash-coin"></i>
-                                    <p>Finance & Billing</p>
-                                </Link>
-                            </li>
+                            <>
+                                <li className="nav-header">ADMINISTRATION</li>
+                                <li className="nav-item">
+                                    <Link to="/roles" className={`nav-link ${location.pathname === '/roles' ? 'active' : ''}`}>
+                                        <i className="nav-icon bi bi-people"></i>
+                                        <p>Roles & Team</p>
+                                    </Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link to="/documents" className={`nav-link ${location.pathname === '/documents' ? 'active' : ''}`}>
+                                        <i className="nav-icon bi bi-file-earmark-text"></i>
+                                        <p>Global Documents</p>
+                                    </Link>
+                                </li>
+                            </>
                         )}
                     </ul>
                 </nav>

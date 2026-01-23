@@ -8,7 +8,8 @@ import Dashboard from "./pages/Dashboard";
 import SalesModule from "./pages/SalesModule";
 import SupportModule from "./pages/SupportModule";
 import FinanceModule from "./pages/FinanceModule";
-import OperationsModule from "./pages/OperationsModule";
+
+import BillingModule from "./pages/BillingModule";
 import ExecutionModule from "./pages/ExecutionModule"; // NEW
 import DocumentsPage from "./pages/DocumentsPage";
 import RolesPage from "./pages/RolesPage";
@@ -59,12 +60,7 @@ function App() {
                 </RoleRoute>
               } />
 
-              {/* Ops: OPS & ADMIN */}
-              <Route path="/ops" element={
-                <RoleRoute allowedRoles={['ops', 'admin']}>
-                  <OperationsModule />
-                </RoleRoute>
-              } />
+
 
               {/* Execution: EXECUTION & ADMIN */}
               <Route path="/execution" element={
@@ -84,6 +80,13 @@ function App() {
               <Route path="/finance" element={
                 <RoleRoute allowedRoles={['finance', 'admin']}>
                   <FinanceModule />
+                </RoleRoute>
+              } />
+
+              {/* Billing: FINANCE(BILLING) & ADMIN */}
+              <Route path="/billing" element={
+                <RoleRoute allowedRoles={['finance', 'admin']}>
+                  <BillingModule />
                 </RoleRoute>
               } />
 

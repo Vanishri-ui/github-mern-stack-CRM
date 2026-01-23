@@ -26,16 +26,17 @@ const DepartmentDocuments = ({ department }) => {
 
     const handleUpload = async (e) => {
         e.preventDefault();
+        if (!file) return;
         const formData = new FormData();
         formData.append('document', file);
-        formData.append('title', title);
-        formData.append('department', department); // Automatically tag with prop department
+        formData.append('title', file.name); // Automatically use filename as title
+        formData.append('department', department);
 
         try {
             await axios.post('/api/documents', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setTitle(''); setFile(null);
+            setFile(null);
             fetchDocuments();
             alert('Document uploaded successfully');
         } catch (e) { alert('Upload failed'); }
@@ -45,40 +46,30 @@ const DepartmentDocuments = ({ department }) => {
         <div className="card card-outline card-secondary">
             <div className="card-header">
                 <h3 className="card-title text-capitalize">{department} Documents</h3>
-                <div className="card-tools"><button type="button" className="btn btn-tool" data-lte-toggle="card-collapse"><i className="bi bi-dash"></i></button></div>
             </div>
             <div className="card-body">
                 {/* UPLOAD FORM */}
                 <form onSubmit={handleUpload} className="mb-4">
                     <div className="input-group">
-                        <input type="text" className="form-control" placeholder="Document Title" value={title} onChange={e => setTitle(e.target.value)} required />
-                        <input type="file" className="form-control" onChange={e => setFile(e.target.files[0])} required />
-                        <button className="btn btn-secondary" type="submit">Upload</button>
+                        <input type="file" className="form-control" id="docUpload" onChange={e => setFile(e.target.files[0])} required />
+                        <button className="btn btn-secondary" type="submit">
+                            <i className="bi bi-upload me-1"></i> Upload
+                        </button>
                     </div>
                     <small className="text-muted">Files will be tagged as <b>{department}</b>.</small>
                 </form>
 
                 {/* LIST */}
-                <table className="table table-sm table-striped">
-                    <thead><tr><th>Title</th><th>Filename</th><th>Uploaded By</th><th>Date</th><th>Action</th></tr></thead>
-                    <tbody>
-                        {loading && <tr><td colSpan="5">Loading...</td></tr>}
-                        {!loading && docs.length === 0 && <tr><td colSpan="5">No documents found.</td></tr>}
-                        {docs.map(d => (
-                            <tr key={d._id}>
-                                <td>{d.title}</td>
-                                <td>{d.filename}</td>
-                                <td>{d.uploadedBy ? d.uploadedBy.name : 'Unknown'}</td>
-                                <td>{new Date(d.uploadDate).toLocaleDateString()}</td>
-                                <td>
-                                    <a href={`http://localhost:5000/uploads/${d.filename}`} target="_blank" rel="noopener noreferrer" className="btn btn-xs btn-info">
-                                        <i className="bi bi-eye"></i> View
-                                    </a>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="list-group">
+                    {loading && <div className="text-center p-3">Loading...</div>}
+                    {!loading && docs.length === 0 && <div className="text-center p-3 text-muted">No documents found.</div>}
+                    {docs.map(d => (
+                        <a key={d._id} href={`http://localhost:5000/uploads/${d.filename}`} target="_blank" rel="noopener noreferrer" className="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i className="bi bi-file-earmark-pdf me-2 text-danger"></i> Document</span>
+                            <span className="badge bg-primary rounded-pill"><i className="bi bi-eye"></i> View</span>
+                        </a>
+                    ))}
+                </div>
             </div>
         </div>
     );

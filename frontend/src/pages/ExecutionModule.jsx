@@ -8,13 +8,18 @@ const ExecutionModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Manual Work Order State
     const [showWOModal, setShowWOModal] = useState(false);
-    const [woCustomer, setWOCustomer] = useState('');
-    const [woProduct, setWOProduct] = useState('');
-    const [woAmount, setWOAmount] = useState('');
-    const [woLines, setWOLines] = useState('');
+    const [woData, setWoData] = useState({
+        customerName: '',
+        productName: '',
+        amount: '',
+        serviceLines: '',
+        orderType: 'New Sale',
+        date: new Date().toISOString().split('T')[0]
+    });
 
     useEffect(() => {
         fetchOrders();
@@ -24,7 +29,11 @@ const ExecutionModule = () => {
         try {
             const res = await axios.get('/api/sales');
             setOrders(res.data);
-        } catch (e) { console.error(e); }
+            setLoading(false);
+        } catch (e) {
+            console.error(e);
+            setLoading(false);
+        }
     };
 
     const updateStatus = async (id, newStatus) => {
@@ -36,27 +45,41 @@ const ExecutionModule = () => {
         }
     };
 
-    // Create Work Order
     const handleCreateWO = async (e) => {
         e.preventDefault();
         try {
+            // Generate WO Number logic is handled by backend or simply stored string
+            // For manual entry, we'll let the backend generate ID, but we can generate a temporary WO string if needed for display
+            // Ideally, the backend should assign a sequential WO number on save.
+            // For now, we stick to the user's request of "Proper Number" which we can derive from date + random or ID.
+
+            const dateStr = woData.date.replace(/-/g, '');
+            const random = Math.floor(1000 + Math.random() * 9000);
+            const woNum = `WO-${dateStr}-${random}`;
+
             await axios.post('/api/sales', {
-                customerName: woCustomer,
-                productName: woProduct,
-                amount: Number(woAmount),
-                serviceLines: woLines,
+                ...woData,
+                workOrderNumber: woNum,
                 status: 'Pending Execution',
-                agentName: 'Execution Team Manual Entry'
+                agentName: 'Execution Team Manual Entry',
+                salesPerson: user.id // Fix: Required by backend, user object has .id
             });
             setShowWOModal(false);
-            setWOCustomer(''); setWOProduct(''); setWOAmount(''); setWOLines('');
+            setWoData({ customerName: '', productName: '', amount: '', serviceLines: '', orderType: 'New Sale', date: new Date().toISOString().split('T')[0] });
             fetchOrders();
         } catch (e) { alert('Failed to create Work Order'); }
     };
 
-    const getWorkOrderNumber = (id, index) => `WO-${String(index + 1).padStart(4, '0')}`;
+    // Helper to format WO number if not present in DB
+    const getWONumber = (order) => {
+        if (order.workOrderNumber) return order.workOrderNumber;
+        // Fallback generator
+        const d = new Date(order.date);
+        const dateStr = d.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+        const suffix = order._id.slice(-4).toUpperCase();
+        return `WO-${dateStr}-${suffix}`;
+    };
 
-    // Filter Logic
     const pendingOrders = orders.filter(o => o.status === 'Pending Execution' || !o.status);
     const executedOrders = orders.filter(o => o.status === 'Executed' || o.status === 'Billed');
 
@@ -64,141 +87,192 @@ const ExecutionModule = () => {
         <section className="content-header">
             <div className="container-fluid">
                 <div className="row mb-2">
-                    <div className="col-sm-6"><h1>Execution Department</h1></div>
+                    <div className="col-sm-6"><h1>Order Execution</h1></div>
                     <div className="col-sm-6 text-end">
-                        <button className="btn btn-primary" onClick={() => setShowWOModal(true)}>
-                            <i className="bi bi-plus-lg"></i> Create Work Order
+                        <button className="btn btn-primary shadow-sm" onClick={() => setShowWOModal(true)}>
+                            <i className="bi bi-plus-lg"></i> Manual Work Order
                         </button>
                     </div>
                 </div>
 
-                {/* STATS ROW */}
+                {/* KPI CARDS */}
                 <div className="row mb-3">
-                    <div className="col-md-4">
-                        <div className="info-box shadow-sm">
-                            <span className="info-box-icon bg-warning"><i className="bi bi-hourglass-split"></i></span>
+                    <div className="col-md-6">
+                        <div className="info-box shadow-sm mb-3">
+                            <span className="info-box-icon bg-warning elevation-1"><i className="bi bi-hourglass-split"></i></span>
                             <div className="info-box-content">
                                 <span className="info-box-text">Pending Execution</span>
                                 <span className="info-box-number">{pendingOrders.length}</span>
                             </div>
                         </div>
                     </div>
-                    <div className="col-md-4">
-                        <div className="info-box shadow-sm">
-                            <span className="info-box-icon bg-success"><i className="bi bi-check2-all"></i></span>
+                    <div className="col-md-6">
+                        <div className="info-box shadow-sm mb-3">
+                            <span className="info-box-icon bg-success elevation-1"><i className="bi bi-check2-all"></i></span>
                             <div className="info-box-content">
-                                <span className="info-box-text">Executed Orders</span>
+                                <span className="info-box-text">Completed Orders</span>
                                 <span className="info-box-number">{executedOrders.length}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* PENDING ORDERS */}
-                <div className="card card-warning card-outline">
-                    <div className="card-header">
-                        <h3 className="card-title">Pending Orders (Action Required)</h3>
+                {/* TABS */}
+                <div className="card card-primary card-outline card-outline-tabs shadow-sm mt-3">
+                    <div className="card-header p-0 border-bottom-0">
+                        <ul className="nav nav-tabs" id="execution-tabs" role="tablist">
+                            <li className="nav-item">
+                                <a className="nav-link active" id="pending-tab" data-bs-toggle="pill" href="#pending" role="tab">
+                                    <i className="bi bi-hourglass-split me-2"></i>Pending Orders <span className="badge bg-warning ms-1 text-dark">{pendingOrders.length}</span>
+                                </a>
+                            </li>
+                            <li className="nav-item">
+                                <a className="nav-link" id="history-tab" data-bs-toggle="pill" href="#history" role="tab">
+                                    <i className="bi bi-clock-history me-2"></i>Execution History
+                                </a>
+                            </li>
+                            <li className="nav-item">
+                                <a className="nav-link" id="docs-tab" data-bs-toggle="pill" href="#docs" role="tab">
+                                    <i className="bi bi-file-earmark-text me-2"></i>Documents
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                    <div className="card-body table-responsive p-0">
-                        <table className="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>WO #</th>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Product</th>
-                                    <th>Lines</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {pendingOrders.filter(o => {
-                                    if (!searchQuery) return true;
-                                    const lower = searchQuery.toLowerCase();
-                                    return (o.customerName?.toLowerCase().includes(lower));
-                                }).map((o, index) => (
-                                    <tr key={o._id}>
-                                        <td>{getWorkOrderNumber(o._id, index)}</td>
-                                        <td>{new Date(o.date).toLocaleDateString()}</td>
-                                        <td>{o.customerName}</td>
-                                        <td>{o.productName}</td>
-                                        <td>{o.serviceLines || '-'}</td>
-                                        <td>
-                                            <button className="btn btn-sm btn-success" onClick={() => updateStatus(o._id, 'Executed')}>
-                                                <i className="bi bi-play-fill"></i> Execute
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="card-body p-0">
+                        <div className="tab-content">
+                            {/* PENDING TAB */}
+                            <div className="tab-pane fade show active" id="pending" role="tabpanel">
+                                <div className="table-responsive">
+                                    <table className="table table-bordered table-hover table-sm text-nowrap align-middle mb-0" style={{ fontSize: '0.85rem' }}>
+                                        <thead className="table-light text-center">
+                                            <tr>
+                                                <th>WO Number</th>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Customer</th>
+                                                <th>Product</th>
+                                                <th>Lines</th>
+                                                <th>Account Manager</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pendingOrders.length === 0 ? (
+                                                <tr><td colSpan="7" className="text-center py-4 text-muted">No pending orders.</td></tr>
+                                            ) : (
+                                                pendingOrders.filter(o => {
+                                                    if (!searchQuery) return true;
+                                                    const lower = searchQuery.toLowerCase();
+                                                    return (o.customerName?.toLowerCase().includes(lower) || getWONumber(o).toLowerCase().includes(lower));
+                                                }).map((o) => (
+                                                    <tr key={o._id}>
+                                                        <td className="fw-bold text-primary">{getWONumber(o)}</td>
+                                                        <td className="text-center">{new Date(o.date).toLocaleDateString()}</td>
+                                                        <td className="text-center"><span className="badge bg-secondary">{o.orderType || 'New Sale'}</span></td>
+                                                        <td className="fw-bold">{o.customerName}</td>
+                                                        <td>{o.productName}</td>
+                                                        <td className="text-center">{o.serviceLines || (o.numberOfLines || 1) + ' Lines'}</td>
+                                                        <td className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</td>
+                                                        <td className="text-center">
+                                                            <button className="btn btn-sm btn-success shadow-none" onClick={() => updateStatus(o._id, 'Executed')}>
+                                                                <i className="bi bi-play-fill"></i> Execute
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* HISTORY TAB */}
+                            <div className="tab-pane fade" id="history" role="tabpanel">
+                                <div className="table-responsive">
+                                    <table className="table table-bordered table-striped table-hover table-sm text-nowrap align-middle mb-0" style={{ fontSize: '0.85rem' }}>
+                                        <thead className="table-light text-center">
+                                            <tr>
+                                                <th>WO Number</th>
+                                                <th>Date</th>
+                                                <th>Customer</th>
+                                                <th>Product</th>
+                                                <th>Account Manager</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {executedOrders.length === 0 ? (
+                                                <tr><td colSpan="5" className="text-center py-4 text-muted">No history found.</td></tr>
+                                            ) : (
+                                                executedOrders.map(o => (
+                                                    <tr key={o._id}>
+                                                        <td className="fw-bold">{getWONumber(o)}</td>
+                                                        <td className="text-center">{new Date(o.date).toLocaleDateString()}</td>
+                                                        <td>{o.customerName}</td>
+                                                        <td>{o.productName}</td>
+                                                        <td className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</td>
+                                                        <td className="text-center">
+                                                            <span className={`badge ${o.status === 'Billed' ? 'bg-success' : 'bg-primary'}`}>
+                                                                {o.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* DOCUMENTS TAB */}
+                            <div className="tab-pane fade" id="docs" role="tabpanel">
+                                <div className="p-3">
+                                    <DepartmentDocuments department="execution" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* HISTORY */}
-                <div className="card card-secondary card-outline collapsed-card">
-                    <div className="card-header">
-                        <h3 className="card-title">Execution History</h3>
-                        <div className="card-tools"><button type="button" className="btn btn-tool" data-lte-toggle="card-collapse"><i className="bi bi-plus"></i></button></div>
-                    </div>
-                    <div className="card-body table-responsive p-0" style={{ display: 'none' }}> {/* AdminLTE toggle logic handles display, but adding style just in case */}
-                        <table className="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>WO #</th>
-                                    <th>Customer</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {executedOrders.map((o, index) => (
-                                    <tr key={o._id}>
-                                        <td>WO-{String(index + 1).padStart(4, '0')}</td>
-                                        <td>{o.customerName}</td>
-                                        <td><span className="badge bg-success">{o.status}</span></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* DOCUMENTS SECTION */}
-                <div className="row mt-4">
-                    <div className="col-12">
-                        <DepartmentDocuments department="execution" />
-                    </div>
-                </div>
-
-                {/* MANUAL WO MODAL */}
+                {/* MODAL */}
                 {showWOModal && (
                     <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
                         <div className="modal-dialog">
                             <div className="modal-content">
-                                <div className="modal-header">
-                                    <h5 className="modal-title">Create Work Order</h5>
-                                    <button className="btn-close" onClick={() => setShowWOModal(false)}></button>
+                                <div className="modal-header bg-primary text-white">
+                                    <h5 className="modal-title">Create Manual Work Order</h5>
+                                    <button className="btn-close btn-close-white" onClick={() => setShowWOModal(false)}></button>
                                 </div>
                                 <form onSubmit={handleCreateWO}>
                                     <div className="modal-body">
                                         <div className="mb-3">
-                                            <label>Customer Name</label>
-                                            <input type="text" className="form-control" value={woCustomer} onChange={e => setWOCustomer(e.target.value)} required />
+                                            <label className="form-label small fw-bold">Order Type</label>
+                                            <select className="form-select" value={woData.orderType} onChange={e => setWoData({ ...woData, orderType: e.target.value })}>
+                                                <option>New Sale</option>
+                                                <option>Upgrade</option>
+                                                <option>Downgrade</option>
+                                                <option>Maintenance</option>
+                                            </select>
                                         </div>
                                         <div className="mb-3">
-                                            <label>Product / Service Details</label>
-                                            <input type="text" className="form-control" value={woProduct} onChange={e => setWOProduct(e.target.value)} required />
+                                            <label className="form-label small fw-bold">Customer Name</label>
+                                            <input type="text" className="form-control" value={woData.customerName} onChange={e => setWoData({ ...woData, customerName: e.target.value })} required />
                                         </div>
                                         <div className="mb-3">
-                                            <label>Number of Lines</label>
-                                            <input type="text" className="form-control" value={woLines} onChange={e => setWOLines(e.target.value)} placeholder="e.g. 5 Lines" />
+                                            <label className="form-label small fw-bold">Product / Service</label>
+                                            <input type="text" className="form-control" value={woData.productName} onChange={e => setWoData({ ...woData, productName: e.target.value })} required />
                                         </div>
                                         <div className="mb-3">
-                                            <label>Amount (Optional)</label>
-                                            <input type="number" className="form-control" value={woAmount} onChange={e => setWOAmount(e.target.value)} placeholder="0.00" />
+                                            <label className="form-label small fw-bold">Amount</label>
+                                            <input type="number" className="form-control" value={woData.amount} onChange={e => setWoData({ ...woData, amount: e.target.value })} required />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label small fw-bold">Details / Lines</label>
+                                            <textarea className="form-control" rows="2" value={woData.serviceLines} onChange={e => setWoData({ ...woData, serviceLines: e.target.value })}></textarea>
                                         </div>
                                     </div>
                                     <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setShowWOModal(false)}>Cancel</button>
                                         <button type="submit" className="btn btn-primary">Create Order</button>
                                     </div>
                                 </form>
@@ -206,6 +280,8 @@ const ExecutionModule = () => {
                         </div>
                     </div>
                 )}
+
+
             </div>
         </section>
     );

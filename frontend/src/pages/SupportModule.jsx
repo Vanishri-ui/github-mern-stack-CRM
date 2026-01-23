@@ -8,18 +8,32 @@ const SupportModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [tickets, setTickets] = useState([]);
-    const [sales, setSales] = useState([]); // For dropdown
+    const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('tickets'); // tickets, customers, docs
 
-    // Form
+    // Modal State
+    const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('Medium');
-    // New Fields
     const [linkedSale, setLinkedSale] = useState('');
     const [productName, setProductName] = useState('');
     const [serviceLines, setServiceLines] = useState('');
+
+    // Add Data (Sale) State
+    const [showSaleModal, setShowSaleModal] = useState(false);
+    const [saleData, setSaleData] = useState({
+        customerName: '',
+        productName: '',
+        amount: '',
+        agentName: '',
+        date: new Date().toISOString().split('T')[0],
+        mrc: '',
+        initialRecharge: '',
+        virtualNumber: '',
+        remarks: ''
+    });
 
     useEffect(() => {
         fetchData();
@@ -37,7 +51,7 @@ const SupportModule = () => {
         } catch (e) { console.error(e); setLoading(false); }
     };
 
-    const fetchTickets = async () => { /* Kept for refresh after update */
+    const fetchTickets = async () => {
         try { const res = await axios.get('/api/tickets'); setTickets(res.data); } catch (e) { }
     }
 
@@ -64,110 +78,205 @@ const SupportModule = () => {
         }
     };
 
+    const handleAddSale = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/api/sales', {
+                ...saleData,
+                status: 'Executed', // Auto-set to executed if support adds it retrospectively? 
+                // Or 'Pending Execution'. Let's use 'Executed' for database entry.
+                salesPerson: user.id
+            });
+            setShowSaleModal(false);
+            setSaleData({ customerName: '', productName: '', amount: '', agentName: '', date: new Date().toISOString().split('T')[0], mrc: '', initialRecharge: '', virtualNumber: '', remarks: '' });
+            fetchData();
+            alert('Customer data added successfully');
+        } catch (e) { alert('Failed to add data'); }
+    };
+
+    // --- UI HELPERS ---
+    const uniqueCustomers = [...new Set(sales.map(s => s.customerName))].map(name => {
+        // Find all products for this customer
+        const customerSales = sales.filter(s => s.customerName === name);
+        return {
+            name,
+            products: customerSales.map(s => s.productName).join(', '),
+            status: customerSales.some(s => s.status === 'Executed') ? 'Active' : 'Pending',
+            totalOrders: customerSales.length
+        };
+    });
+
     return (
         <section className="content-header">
             <div className="container-fluid">
-                <div className="row mb-2">
-                    <div className="col-sm-6"><h1>Support Tickets</h1></div>
-                    <div className="col-sm-6 text-end">
-                        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                            <i className="bi bi-plus-lg"></i> Create Ticket
-                        </button>
+                <div className="row mb-3">
+                    <div className="col-md-6"><h1>Support & Customers</h1></div>
+                    <div className="col-md-6 text-end">
+                        {activeTab === 'tickets' ? (
+                            <button className="btn btn-primary shadow-sm" onClick={() => setShowModal(true)}>
+                                <i className="bi bi-plus-lg me-1"></i> New Ticket
+                            </button>
+                        ) : activeTab === 'customers' ? (
+                            <button className="btn btn-success shadow-sm" onClick={() => setShowSaleModal(true)}>
+                                <i className="bi bi-person-plus-fill me-1"></i> Add Data
+                            </button>
+                        ) : null}
                     </div>
                 </div>
 
-                <div className="card card-outline card-warning">
-                    <div className="card-header">
-                        <h3 className="card-title">Ticket List</h3>
-                        <div className="card-tools">
-                            <div className="input-group input-group-sm" style={{ width: '200px' }}>
-                                {/* Global Search Used */}
+                {/* TABS */}
+                <div className="card card-primary card-outline card-outline-tabs shadow-sm">
+                    <div className="card-header p-0 border-bottom-0">
+                        <ul className="nav nav-tabs" id="custom-tabs-four-tab" role="tablist">
+                            <li className="nav-item">
+                                <a className={`nav-link ${activeTab === 'tickets' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('tickets')}>
+                                    <i className="bi bi-ticket-detailed me-2"></i>Tickets <span className="badge bg-danger ms-1">{tickets.filter(t => t.status !== 'Resolved').length}</span>
+                                </a>
+                            </li>
+                            <li className="nav-item">
+                                <a className={`nav-link ${activeTab === 'customers' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('customers')}>
+                                    <i className="bi bi-people me-2"></i>Customer Database
+                                </a>
+                            </li>
+                            <li className="nav-item">
+                                <a className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('docs')}>
+                                    <i className="bi bi-folder2-open me-2"></i>Documents
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="card-body p-0">
+
+                        {/* TICKETS TAB */}
+                        {activeTab === 'tickets' && (
+                            <>
+                                <div className="table-responsive">
+                                    <table className="table table-bordered table-striped table-hover table-sm text-nowrap align-middle mb-0" style={{ fontSize: '0.9rem' }}>
+                                        <thead className="table-light text-center">
+                                            <tr>
+                                                <th>Status</th>
+                                                <th>Subject</th>
+                                                <th>Product Ref</th>
+                                                <th>Priority</th>
+                                                <th>Raised By</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {tickets.length === 0 ? <tr><td colSpan="6" className="text-center py-4">No tickets found.</td></tr> :
+                                                tickets.filter(t => !searchQuery
+                                                    || t.title?.toLowerCase().includes(searchQuery.toLowerCase())
+                                                    || t.description?.toLowerCase().includes(searchQuery.toLowerCase())
+                                                ).map(t => (
+                                                    <tr key={t._id}>
+                                                        <td className="text-center">
+                                                            <span className={`badge ${t.status === 'Resolved' ? 'bg-success' : 'bg-warning'}`}>
+                                                                {t.status}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span className="fw-bold d-block">{t.title}</span>
+                                                            <small className="text-muted text-wrap" style={{ maxWidth: '300px', display: 'block' }}>{t.description}</small>
+                                                        </td>
+                                                        <td>
+                                                            {t.productName ? (
+                                                                <div><span className="fw-bold">{t.productName}</span> <span className="text-muted small">({t.serviceLines} Lines)</span></div>
+                                                            ) : <span className="text-muted">-</span>}
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <span className={`badge ${t.priority === 'High' ? 'bg-danger' : t.priority === 'Medium' ? 'bg-info' : 'bg-secondary'}`}>
+                                                                {t.priority}
+                                                            </span>
+                                                        </td>
+                                                        <td className="text-center">{t.user ? t.user.name : 'Unknown'}</td>
+                                                        <td className="text-center">
+                                                            {(user.role === 'admin' || user.department === 'tech') && t.status !== 'Resolved' && (
+                                                                <button className="btn btn-sm btn-success shadow-sm" onClick={() => handleResolve(t._id)}>
+                                                                    <i className="bi bi-check-lg"></i> Solve
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+
+                        {/* CUSTOMERS TAB */}
+                        {activeTab === 'customers' && (
+                            <div className="table-responsive">
+                                <table className="table table-bordered table-striped table-hover table-sm text-nowrap align-middle mb-0" style={{ fontSize: '0.85rem' }}>
+                                    <thead className="table-dark text-center">
+                                        <tr>
+                                            <th>Account Manager</th>
+                                            <th>Company Name</th>
+                                            <th>Lines</th>
+                                            <th>Product</th>
+                                            <th>Virtual Number</th>
+                                            <th>WO Number</th>
+                                            <th>MRC</th>
+                                            <th>Initial Recharge</th>
+                                            <th>Description/Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {sales.length === 0 ? (
+                                            <tr><td colSpan="9" className="text-center py-4 text-muted">No records found.</td></tr>
+                                        ) : (
+                                            sales.filter(s => {
+                                                if (!searchQuery) return true;
+                                                const lower = searchQuery.toLowerCase();
+                                                return (
+                                                    s.customerName?.toLowerCase().includes(lower) ||
+                                                    s.productName?.toLowerCase().includes(lower) ||
+                                                    s.virtualNumber?.toLowerCase().includes(lower) ||
+                                                    s.workOrderNumber?.toLowerCase().includes(lower)
+                                                );
+                                            }).map((s, idx) => (
+                                                <tr key={idx}>
+                                                    <td>{s.agentName || (s.salesPerson?.name) || '-'}</td>
+                                                    <td className="fw-bold">{s.customerName}</td>
+                                                    <td className="text-center">{s.numberOfLines || 1}</td>
+                                                    <td>{s.productName}</td>
+                                                    <td className="text-primary fw-bold text-center">{s.virtualNumber || '-'}</td>
+                                                    <td className="text-center"><small>{s.workOrderNumber || '-'}</small></td>
+                                                    <td className="text-end fw-bold text-success">${(s.mrc || 0).toLocaleString()}</td>
+                                                    <td className="text-end fw-bold">${(s.initialRecharge || 0).toLocaleString()}</td>
+                                                    <td className="text-wrap" style={{ minWidth: '200px' }}>{s.remarks || s.serviceLines || '-'}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
-                    </div>
-                    <div className="card-body table-responsive p-0">
-                        <table className="table table-hover text-nowrap">
-                            <thead>
-                                <tr>
-                                    <th>Status</th>
-                                    <th>Subject</th>
-                                    <th>Product Reference</th> { /* NEW */}
-                                    <th>Priority</th>
-                                    <th>Raised By</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading && <tr><td colSpan="5">Loading...</td></tr>}
-                                {!loading && tickets.filter(t => {
-                                    if (!searchQuery) return true;
-                                    const lower = searchQuery.toLowerCase();
-                                    return (
-                                        t.title?.toLowerCase().includes(lower) ||
-                                        t.description?.toLowerCase().includes(lower) ||
-                                        t.priority?.toLowerCase().includes(lower) ||
-                                        t.status?.toLowerCase().includes(lower) ||
-                                        (t.user && t.user.name?.toLowerCase().includes(lower))
-                                    );
-                                }).map(t => (
-                                    <tr key={t._id}>
-                                        <td>
-                                            <span className={`badge ${t.status === 'Resolved' ? 'bg-success' : 'bg-warning'}`}>
-                                                {t.status}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <strong>{t.title}</strong><br />
-                                            <small className="text-muted">{t.description}</small>
-                                        </td>
-                                        <td>
-                                            {t.productName ? (
-                                                <div>
-                                                    <span className="fw-bold">{t.productName}</span><br />
-                                                    <small className="text-muted">{t.serviceLines} Lines</small>
-                                                </div>
-                                            ) : <span className="text-muted">-</span>}
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${t.priority === 'High' ? 'bg-danger' : t.priority === 'Medium' ? 'bg-info' : 'bg-secondary'}`}>
-                                                {t.priority}
-                                            </span>
-                                        </td>
-                                        <td>{t.user ? t.user.name : 'Unknown'}</td>
-                                        <td>
-                                            {(user.role === 'admin' || user.department === 'tech') && t.status !== 'Resolved' && (
-                                                <button className="btn btn-sm btn-success" onClick={() => handleResolve(t._id)}>
-                                                    <i className="bi bi-check-lg"></i> Resolve
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        )}
+
+                        {/* DOCUMENTS TAB */}
+                        {activeTab === 'docs' && (
+                            <div className="p-3">
+                                <DepartmentDocuments department="tech" />
+                            </div>
+                        )}
+
                     </div>
                 </div>
 
-                {/* DOCUMENTS SECTION */}
-                <div className="row mt-4">
-                    <div className="col-12">
-                        <DepartmentDocuments department="tech" />
-                    </div>
-                </div>
-
+                {/* MODAL */}
                 {showModal && (
                     <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
                         <div className="modal-dialog">
                             <div className="modal-content">
-                                <div className="modal-header">
+                                <div className="modal-header bg-warning">
                                     <h5 className="modal-title">New Support Ticket</h5>
                                     <button className="btn-close" onClick={() => setShowModal(false)}></button>
                                 </div>
                                 <form onSubmit={handleSubmit}>
                                     <div className="modal-body">
-                                        {/* CUSTOMER/SALE SELECTION */}
                                         <div className="mb-3">
-                                            <label>Select Existing Customer (Product)</label>
+                                            <label className="form-label small fw-bold">Customer (Product Ref)</label>
                                             <select className="form-select" onChange={e => {
                                                 const saleId = e.target.value;
                                                 const sale = sales.find(s => s._id === saleId);
@@ -175,40 +284,35 @@ const SupportModule = () => {
                                                     setLinkedSale(saleId);
                                                     setProductName(sale.productName);
                                                     setServiceLines(sale.serviceLines || 'N/A');
-                                                    setTitle(`Issue with ${sale.productName} (${sale.customerName})`); // Auto-suggest title
+                                                    setTitle(`Issue with ${sale.productName}`);
                                                 } else {
-                                                    setLinkedSale('');
-                                                    setProductName('');
-                                                    setServiceLines('');
+                                                    setLinkedSale(''); setProductName(''); setServiceLines('');
                                                 }
                                             }}>
                                                 <option value="">-- Select Customer --</option>
                                                 {sales.map(s => (
                                                     <option key={s._id} value={s._id}>
-                                                        {s.customerName} - {s.productName} ({s.date ? new Date(s.date).toLocaleDateString() : 'No Date'})
+                                                        {s.customerName} - {s.productName}
                                                     </option>
                                                 ))}
                                             </select>
                                         </div>
-
-                                        {/* AUTO-FILLED DETAILS */}
                                         <div className="row">
                                             <div className="col-md-6 mb-3">
-                                                <label>Product</label>
+                                                <label className="form-label small fw-bold">Product</label>
                                                 <input className="form-control" value={productName} readOnly disabled />
                                             </div>
                                             <div className="col-md-6 mb-3">
-                                                <label>No. of Lines</label>
+                                                <label className="form-label small fw-bold">Lines</label>
                                                 <input className="form-control" value={serviceLines} readOnly disabled />
                                             </div>
                                         </div>
-
                                         <div className="mb-3">
-                                            <label>Subject / Issue Title</label>
+                                            <label className="form-label small fw-bold">Subject</label>
                                             <input className="form-control" value={title} onChange={e => setTitle(e.target.value)} required />
                                         </div>
                                         <div className="mb-3">
-                                            <label>Priority</label>
+                                            <label className="form-label small fw-bold">Priority</label>
                                             <select className="form-select" value={priority} onChange={e => setPriority(e.target.value)}>
                                                 <option>Low</option>
                                                 <option>Medium</option>
@@ -216,12 +320,73 @@ const SupportModule = () => {
                                             </select>
                                         </div>
                                         <div className="mb-3">
-                                            <label>Description</label>
+                                            <label className="form-label small fw-bold">Description</label>
                                             <textarea className="form-control" rows="3" value={description} onChange={e => setDescription(e.target.value)}></textarea>
                                         </div>
                                     </div>
                                     <div className="modal-footer">
-                                        <button type="submit" className="btn btn-warning">Submit Ticket</button>
+                                        <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                                        <button type="submit" className="btn btn-warning">Create Ticket</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ADD DATA MODAL */}
+                {showSaleModal && (
+                    <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog modal-lg">
+                            <div className="modal-content text-dark shadow-lg border-0">
+                                <div className="modal-header bg-success text-white">
+                                    <h5 className="modal-title"><i className="bi bi-person-plus-fill me-2"></i>New Customer Entry</h5>
+                                    <button className="btn-close btn-close-white" onClick={() => setShowSaleModal(false)}></button>
+                                </div>
+                                <form onSubmit={handleAddSale}>
+                                    <div className="modal-body p-4">
+                                        <div className="row g-3">
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Customer Name</label>
+                                                <input className="form-control form-control-sm" value={saleData.customerName} onChange={e => setSaleData({ ...saleData, customerName: e.target.value })} required />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Product Name</label>
+                                                <input className="form-control form-control-sm" value={saleData.productName} onChange={e => setSaleData({ ...saleData, productName: e.target.value })} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Amount</label>
+                                                <input type="number" className="form-control form-control-sm" value={saleData.amount} onChange={e => setSaleData({ ...saleData, amount: e.target.value })} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Account Manager</label>
+                                                <input className="form-control form-control-sm" value={saleData.agentName} onChange={e => setSaleData({ ...saleData, agentName: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">MRC</label>
+                                                <input type="number" className="form-control form-control-sm" value={saleData.mrc} onChange={e => setSaleData({ ...saleData, mrc: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Initial Recharge</label>
+                                                <input type="number" className="form-control form-control-sm" value={saleData.initialRecharge} onChange={e => setSaleData({ ...saleData, initialRecharge: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Virtual Number</label>
+                                                <input className="form-control form-control-sm" value={saleData.virtualNumber} onChange={e => setSaleData({ ...saleData, virtualNumber: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Date</label>
+                                                <input type="date" className="form-control form-control-sm" value={saleData.date} onChange={e => setSaleData({ ...saleData, date: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-12">
+                                                <label className="form-label small fw-bold">Description/Notes</label>
+                                                <textarea className="form-control form-control-sm" rows="2" value={saleData.remarks} onChange={e => setSaleData({ ...saleData, remarks: e.target.value })}></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer bg-light">
+                                        <button type="button" className="btn btn-sm btn-secondary" onClick={() => setShowSaleModal(false)}>Cancel</button>
+                                        <button type="submit" className="btn btn-sm btn-success px-4">Save Customer</button>
                                     </div>
                                 </form>
                             </div>

@@ -3,9 +3,15 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { SearchContext } from '../context/SearchContext';
 
+import { useLocation } from 'react-router-dom';
+
 const DocumentsPage = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const deptFilter = queryParams.get('dept');
+
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -17,12 +23,17 @@ const DocumentsPage = () => {
 
     useEffect(() => {
         fetchDocuments();
-    }, []);
+    }, [deptFilter]); // Re-fetch or re-filter when dept change
 
     const fetchDocuments = async () => {
+        setLoading(true);
         try {
             const res = await axios.get('/api/documents');
-            setDocuments(res.data);
+            let data = res.data;
+            if (deptFilter) {
+                data = data.filter(d => d.department === deptFilter);
+            }
+            setDocuments(data);
             setLoading(false);
         } catch (e) {
             console.error(e);
@@ -37,6 +48,8 @@ const DocumentsPage = () => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', docTitle);
+        // Use deptFilter as default if present, otherwise let user choose or use 'general'
+        formData.append('department', deptFilter || 'general');
 
         setIsUploading(true);
         try {
@@ -47,6 +60,7 @@ const DocumentsPage = () => {
             setDocTitle('');
             setShowModal(false);
             fetchDocuments();
+            alert('Document uploaded successfully to ' + (deptFilter || 'general'));
         } catch (e) {
             alert('Failed to upload document');
         }

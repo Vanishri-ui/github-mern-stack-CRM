@@ -21,9 +21,18 @@ const SalesModule = () => {
         productName: '',
         amount: '',
         agentName: '',
-        date: new Date().toISOString().split('T')[0], // Default today
+        date: new Date().toISOString().split('T')[0],
+        // New Fields
+        orderType: 'New Sale',
+        mrc: '',
+        initialRecharge: '',
+        numberOfLines: 1,
+        remarks: '',
+
+        status: 'Pending Execution',
         followUpDate: '',
-        followUpNotes: ''
+        followUpNotes: '',
+        virtualNumber: '' // New Field
     });
 
     const [reminders, setReminders] = useState([]);
@@ -45,12 +54,10 @@ const SalesModule = () => {
             const currentYear = today.getFullYear();
             const todayStr = today.toISOString().split('T')[0];
 
-            // 1. Reminders
             const due = sales.filter(s => s.followUpDate && s.followUpDate.split('T')[0] === todayStr);
             setReminders(due);
 
-            // 2. Analytics
-            let mrc = 0;
+            let mrcTotal = 0;
             let myTotal = 0;
             let teamTotal = 0;
             let pending = 0;
@@ -60,21 +67,18 @@ const SalesModule = () => {
             sales.forEach(s => {
                 const sDate = new Date(s.date);
                 const amount = Number(s.amount) || 0;
+                const mrc = Number(s.mrc) || 0;
 
-                // Team Total
                 teamTotal += amount;
 
-                // MRC (This Month)
                 if (sDate.getMonth() === currentMonth && sDate.getFullYear() === currentYear) {
-                    mrc += amount;
+                    mrcTotal += mrc;
                 }
 
-                // My Sales (Match by Name)
-                if (user && s.agentName === user.name) {
+                if (user && (s.agentName === user.name || s.salesPerson?.name === user.name)) {
                     myTotal += amount;
                 }
 
-                // Pipeline
                 if (s.status === 'Pending Execution') pending++;
                 else if (s.status === 'Executed') executed++;
                 else if (s.status === 'Billed') billed++;
@@ -82,7 +86,7 @@ const SalesModule = () => {
 
             setStats(prev => ({
                 ...prev,
-                mrc,
+                mrc: mrcTotal,
                 mySalesTotal: myTotal,
                 teamSalesTotal: teamTotal,
                 pipeline: { pending, executed, billed }
@@ -114,10 +118,17 @@ const SalesModule = () => {
             customerName: '',
             productName: '',
             amount: '',
-            agentName: user ? user.name : '', // Default to current user
+            agentName: user ? user.name : '',
             date: new Date().toISOString().split('T')[0],
+            orderType: 'New Sale',
+            mrc: '',
+            initialRecharge: '',
+            numberOfLines: 1,
+            remarks: '',
+            status: 'Pending Execution',
             followUpDate: '',
-            followUpNotes: ''
+            followUpNotes: '',
+            virtualNumber: ''
         });
         setIsEditing(false);
         setCurrentId(null);
@@ -135,9 +146,15 @@ const SalesModule = () => {
             amount: sale.amount || '',
             agentName: sale.agentName || (sale.salesPerson && sale.salesPerson.name) || '',
             date: sale.date ? sale.date.split('T')[0] : '',
+            orderType: sale.orderType || 'New Sale',
+            mrc: sale.mrc || '',
+            initialRecharge: sale.initialRecharge || '',
+            numberOfLines: sale.numberOfLines || 1,
+            remarks: sale.remarks || '',
             status: sale.status || 'Pending Execution',
             followUpDate: sale.followUpDate ? sale.followUpDate.split('T')[0] : '',
-            followUpNotes: sale.followUpNotes || ''
+            followUpNotes: sale.followUpNotes || '',
+            virtualNumber: sale.virtualNumber || ''
         });
         setIsEditing(true);
         setCurrentId(sale._id);
@@ -174,256 +191,265 @@ const SalesModule = () => {
     return (
         <section className="content-header">
             <div className="container-fluid">
-
-                {/* PAGE HEADER */}
                 <div className="row mb-2">
                     <div className="col-sm-6">
-                        <h1 className="fw-light text-dark">Sales Orders</h1>
+                        <h1 className="fw-bold text-dark">Sales Orders</h1>
                     </div>
-                    <div className="col-sm-6">
-                        <button className="btn btn-primary btn-sm float-sm-end shadow-sm" onClick={openCreateModal}>
-                            <i className="bi bi-plus-lg me-1"></i> Create Sale
+                    <div className="col-sm-6 text-end">
+                        <button className="btn btn-primary shadow-sm" onClick={openCreateModal}>
+                            <i className="bi bi-plus-lg me-1"></i> New Sale
                         </button>
                     </div>
                 </div>
 
-
-                {/* ANALYTICS DASHBOARD */}
+                {/* ANALYTICS ROW */}
                 <div className="row mb-3">
-                    {/* 1. MRC */}
-                    <div className="col-md-3 col-sm-6 col-12">
-                        <div className="info-box shadow-sm">
-                            <span className="info-box-icon bg-info"><i className="bi bi-calendar-check"></i></span>
+                    <div className="col-md-3 col-sm-6">
+                        <div className="info-box shadow-sm mb-3">
+                            <span className="info-box-icon bg-info elevation-1"><i className="bi bi-calendar-check"></i></span>
                             <div className="info-box-content">
                                 <span className="info-box-text">MRC (This Month)</span>
                                 <span className="info-box-number">${stats.mrc.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
-
-                    {/* 2. My Performance */}
-                    <div className="col-md-3 col-sm-6 col-12">
-                        <div className="info-box shadow-sm">
-                            <span className="info-box-icon bg-success"><i className="bi bi-person-check"></i></span>
+                    <div className="col-md-3 col-sm-6">
+                        <div className="info-box shadow-sm mb-3">
+                            <span className="info-box-icon bg-success elevation-1"><i className="bi bi-person-check"></i></span>
                             <div className="info-box-content">
-                                <span className="info-box-text">My Target ({Math.round((stats.mySalesTotal / stats.myTarget) * 100)}%)</span>
-                                <span className="info-box-number">${stats.mySalesTotal.toLocaleString()} <small>/ ${stats.myTarget.toLocaleString()}</small></span>
+                                <span className="info-box-text">My Performance</span>
+                                <span className="info-box-number">${stats.mySalesTotal.toLocaleString()}</span>
                                 <div className="progress">
                                     <div className="progress-bar bg-success" style={{ width: `${Math.min((stats.mySalesTotal / stats.myTarget) * 100, 100)}%` }}></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* 3. Team Performance */}
-                    <div className="col-md-3 col-sm-6 col-12">
-                        <div className="info-box shadow-sm">
-                            <span className="info-box-icon bg-warning"><i className="bi bi-people"></i></span>
+                    <div className="col-md-3 col-sm-6">
+                        <div className="info-box shadow-sm mb-3">
+                            <span className="info-box-icon bg-warning elevation-1"><i className="bi bi-people"></i></span>
                             <div className="info-box-content">
-                                <span className="info-box-text">Team Target ({Math.round((stats.teamSalesTotal / stats.teamTarget) * 100)}%)</span>
-                                <span className="info-box-number">${stats.teamSalesTotal.toLocaleString()} <small>/ ${stats.teamTarget.toLocaleString()}</small></span>
+                                <span className="info-box-text">Team Performance</span>
+                                <span className="info-box-number">${stats.teamSalesTotal.toLocaleString()}</span>
                                 <div className="progress">
                                     <div className="progress-bar bg-warning" style={{ width: `${Math.min((stats.teamSalesTotal / stats.teamTarget) * 100, 100)}%` }}></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* 4. Pipeline Status */}
-                    <div className="col-md-3 col-sm-6 col-12">
-                        <div className="info-box shadow-sm">
-                            <span className="info-box-icon bg-danger"><i className="bi bi-pie-chart"></i></span>
+                    <div className="col-md-3 col-sm-6">
+                        <div className="info-box shadow-sm mb-3">
+                            <span className="info-box-icon bg-danger elevation-1"><i className="bi bi-pie-chart"></i></span>
                             <div className="info-box-content">
-                                <span className="info-box-text">Pipeline Status</span>
-                                <span className="info-box-number" style={{ fontSize: '0.9rem' }}>
-                                    Open: {stats.pipeline.pending} | Closed: {stats.pipeline.executed + stats.pipeline.billed}
-                                </span>
+                                <span className="info-box-text">Pipeline</span>
+                                <span className="info-box-number">Open: {stats.pipeline.pending}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* REMINDERS WIDGET */}
+                {/* REMINDERS */}
                 {reminders.length > 0 && (
-                    <div className="alert alert-warning shadow-sm">
-                        <h5><i className="icon bi bi-bell-fill"></i> Today's Follow-ups</h5>
-                        <ul className="mb-0">
+                    <div className="callout callout-warning shadow-sm">
+                        <h5><i className="bi bi-bell-fill text-warning"></i> Follow-ups Needed</h5>
+                        <ul className="list-unstyled">
                             {reminders.map(r => (
-                                <li key={r._id}>
-                                    <strong>Call {r.customerName}</strong> ({r.productName})
-                                    {r.followUpNotes && <span> - Note: {r.followUpNotes}</span>}
-                                    <button className="btn btn-xs btn-outline-dark ms-2" onClick={() => openEditModal(r)}>View</button>
+                                <li key={r._id} className="mb-1">
+                                    <span className="fw-bold">{r.customerName}</span> ({r.productName}) - {r.followUpNotes}
+                                    <a href="#" className="ms-2 text-primary" onClick={(e) => { e.preventDefault(); openEditModal(r); }}>View</a>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 )}
 
-                {/* SALES LIST TABLE */}
-                <div className="card card-outline card-primary shadow-sm">
-                    <div className="card-header">
-                        <h3 className="card-title fw-normal">All Sales</h3>
-                        {/* Search input removed, using Global Search in Header */}
+                {/* TABS */}
+                <div className="card card-primary card-outline card-outline-tabs shadow-sm mt-3">
+                    <div className="card-header p-0 border-bottom-0">
+                        <ul className="nav nav-tabs" id="sales-tabs" role="tablist">
+                            <li className="nav-item">
+                                <a className="nav-link active" id="sales-data-tab" data-bs-toggle="pill" href="#sales-data" role="tab">
+                                    <i className="bi bi-table me-2"></i>Sales Data
+                                </a>
+                            </li>
+                            <li className="nav-item">
+                                <a className="nav-link" id="sales-docs-tab" data-bs-toggle="pill" href="#sales-docs" role="tab">
+                                    <i className="bi bi-file-earmark-text me-2"></i>Sales Documents
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                    <div className="card-body table-responsive p-0">
-                        <table className="table table-hover table-sm text-nowrap align-middle">
-                            <thead className="bg-light">
-                                <tr className="text-muted small text-uppercase">
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Product</th>
-                                    <th>Amount</th>
-                                    <th>Status ({'Pipeline'})</th>
-                                    <th>Account Manager</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr><td colSpan="7" className="text-center">Loading...</td></tr>
-                                ) : sales.length === 0 ? (
-                                    <tr><td colSpan="7" className="text-center">No sales found.</td></tr>
-                                ) : sales.filter(item => {
-                                    if (!searchQuery) return true;
-                                    const lower = searchQuery.toLowerCase();
-                                    return (
-                                        item.customerName?.toLowerCase().includes(lower) ||
-                                        item.productName?.toLowerCase().includes(lower) ||
-                                        item.agentName?.toLowerCase().includes(lower) ||
-                                        (item.salesPerson?.name?.toLowerCase().includes(lower)) ||
-                                        item.amount?.toString().includes(lower) ||
-                                        item.status?.toLowerCase().includes(lower)
-                                    );
-                                }).length === 0 ? (
-                                    <tr><td colSpan="7" className="text-center">No matching records found.</td></tr>
-                                ) : (
-                                    sales.filter(item => {
-                                        if (!searchQuery) return true;
-                                        const lower = searchQuery.toLowerCase();
-                                        return (
-                                            item.customerName?.toLowerCase().includes(lower) ||
-                                            item.productName?.toLowerCase().includes(lower) ||
-                                            item.agentName?.toLowerCase().includes(lower) ||
-                                            (item.salesPerson?.name?.toLowerCase().includes(lower)) ||
-                                            item.amount?.toString().includes(lower) ||
-                                            item.status?.toLowerCase().includes(lower)
-                                        );
-                                    }).map((sale) => (
-                                        <tr key={sale._id}>
-                                            <td>{new Date(sale.date).toLocaleDateString()}</td>
-                                            <td>{sale.customerName}</td>
-                                            <td>{sale.productName}</td>
-                                            <td><span className="badge bg-success">${sale.amount ? sale.amount.toLocaleString() : '0'}</span></td>
-                                            <td>
-                                                <span className={`badge ${sale.status === 'Billed' ? 'bg-success' :
-                                                    sale.status === 'Executed' ? 'bg-info' :
-                                                        'bg-warning'
-                                                    }`}>
-                                                    {sale.status || 'Pending'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="user-block">
-                                                    <span className="username" style={{ marginLeft: 0 }}>
-                                                        {sale.agentName || (sale.salesPerson && sale.salesPerson.name) || 'Unknown'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {/* Show buttons if Admin, Sales Manager, or Owner */}
-                                                {(user?.role === 'admin' || user?.isSalesManager ||
-                                                    (sale.salesPerson && (sale.salesPerson._id === user?.id || sale.salesPerson === user?.id))) && (
-                                                        <>
-                                                            <button className="btn btn-sm btn-info me-1" onClick={() => openEditModal(sale)}>
-                                                                <i className="bi bi-pencil"></i>
-                                                            </button>
-                                                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(sale._id)}>
-                                                                <i className="bi bi-trash"></i>
-                                                            </button>
-                                                        </>
-                                                    )}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                    <div className="card-body p-0">
+                        <div className="tab-content">
+                            {/* SALES DATA TAB */}
+                            <div className="tab-pane fade show active" id="sales-data" role="tabpanel">
+                                <div className="table-responsive">
+                                    <table className="table table-bordered table-striped table-hover table-sm text-nowrap align-middle mb-0" style={{ fontSize: '0.85rem' }}>
+                                        <thead className="table-light text-center align-middle">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Customer</th>
+                                                <th>Product</th>
+                                                <th>VN</th>
+                                                <th>Lines</th>
+                                                <th>MRC</th>
+                                                <th>Acct. Manager</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {sales.filter(item => {
+                                                if (!searchQuery) return true;
+                                                const lower = searchQuery.toLowerCase();
+                                                return (
+                                                    item.customerName?.toLowerCase().includes(lower) ||
+                                                    item.productName?.toLowerCase().includes(lower) ||
+                                                    item.virtualNumber?.toLowerCase().includes(lower) ||
+                                                    item.agentName?.toLowerCase().includes(lower)
+                                                );
+                                            }).map(sale => (
+                                                <tr key={sale._id}>
+                                                    <td className="text-center">{new Date(sale.date).toLocaleDateString()}</td>
+                                                    <td className="text-center"><small>{sale.orderType || '-'}</small></td>
+                                                    <td className="fw-bold">{sale.customerName}</td>
+                                                    <td>{sale.productName}</td>
+                                                    <td className="text-primary text-center fw-bold">{sale.virtualNumber || '-'}</td>
+                                                    <td className="text-center">{sale.numberOfLines}</td>
+                                                    <td className="text-end text-success fw-bold">${Number(sale.mrc).toLocaleString()}</td>
+                                                    <td>{sale.agentName || sale.salesPerson?.name}</td>
+                                                    <td className="text-center">
+                                                        <span className={`badge ${sale.status === 'Billed' ? 'bg-success' :
+                                                            sale.status === 'Executed' ? 'bg-primary' : 'bg-warning text-dark'
+                                                            }`}>
+                                                            {sale.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        {(user?.role === 'admin' || user?.isSalesManager ||
+                                                            (sale.salesPerson && (sale.salesPerson._id === user?.id || sale.salesPerson === user?.id))) && (
+                                                                <>
+                                                                    <button className="btn btn-xs btn-outline-primary me-1" onClick={() => openEditModal(sale)}>
+                                                                        <i className="bi bi-pencil"></i>
+                                                                    </button>
+                                                                    <button className="btn btn-xs btn-outline-danger" onClick={() => handleDelete(sale._id)}>
+                                                                        <i className="bi bi-trash"></i>
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {sales.length === 0 && <tr><td colSpan="10" className="text-center py-3">No Data Available</td></tr>}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* DOCUMENTS TAB */}
+                            <div className="tab-pane fade" id="sales-docs" role="tabpanel">
+                                <div className="p-3">
+                                    <DepartmentDocuments department="sales" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* MODAL (Bootstrap 5) */}
+                {/* CREATE/EDIT MODAL */}
                 {showModal && (
-                    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
-                        <div className="modal-dialog modal-lg">
+                    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog modal-xl">
                             <div className="modal-content">
-                                <div className="modal-header">
-                                    <h5 className="modal-title">{isEditing ? 'Edit Sale' : 'Create New Sale'}</h5>
-                                    <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                                <div className="modal-header bg-primary text-white">
+                                    <h5 className="modal-title">{isEditing ? 'Edit Sale' : 'New Sale Entry'}</h5>
+                                    <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                                 </div>
                                 <form onSubmit={handleSubmit}>
                                     <div className="modal-body">
-                                        <div className="row">
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Customer Name <span className="text-danger">*</span></label>
-                                                <input type="text" className="form-control" name="customerName" value={formData.customerName} onChange={handleInputChange} required />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Product Name <span className="text-danger">*</span></label>
-                                                <input type="text" className="form-control" name="productName" value={formData.productName} onChange={handleInputChange} required />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Amount ($) <span className="text-danger">*</span></label>
-                                                <input type="number" className="form-control" name="amount" value={formData.amount} onChange={handleInputChange} required />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Date <span className="text-danger">*</span></label>
-                                                <input type="date" className="form-control" name="date" value={formData.date} onChange={handleInputChange} required />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Pipeline Status</label>
-                                                <select className="form-select" name="status" value={formData.status} onChange={handleInputChange}>
-                                                    <option value="Pending Execution">Pending Execution</option>
-                                                    <option value="Executed">Executed</option>
-                                                    <option value="Billed">Billed</option>
+                                        <div className="row g-3">
+                                            {/* SECTION 1: BASIC INFO */}
+                                            <div className="col-12"><h6 className="text-primary border-bottom pb-2">Order Details</h6></div>
+
+                                            <div className="col-md-3">
+                                                <label className="form-label small fw-bold">Order Type</label>
+                                                <select className="form-select form-select-sm" name="orderType" value={formData.orderType} onChange={handleInputChange}>
+                                                    <option>New Sale</option>
+                                                    <option>Upgrade</option>
+                                                    <option>Downgrade</option>
+                                                    <option>Renewal</option>
                                                 </select>
                                             </div>
-                                            <div className="col-md-12 mb-3">
-                                                <label className="form-label">Account Manager (Agent Name)</label>
-                                                <input type="text" className="form-control" name="agentName" value={formData.agentName} onChange={handleInputChange} placeholder="Enter name if different from logged in user" />
+                                            <div className="col-md-3">
+                                                <label className="form-label small fw-bold">Date</label>
+                                                <input type="date" className="form-control form-select-sm" name="date" value={formData.date} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Virtual Number (VN)</label>
+                                                <input type="text" className="form-control form-select-sm" name="virtualNumber" value={formData.virtualNumber} onChange={handleInputChange} placeholder="e.g., +123456789" />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Account Manager</label>
+                                                <input type="text" className="form-control form-select-sm" name="agentName" value={formData.agentName} onChange={handleInputChange} placeholder="Agent Name" />
                                             </div>
 
-                                            {/* FOLLOW UP SECTION */}
-                                            <div className="col-12"><hr /><h6>Follow Up Reminder</h6></div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Next Follow Up Date</label>
-                                                <input type="date" className="form-control" name="followUpDate" value={formData.followUpDate} onChange={handleInputChange} />
+                                            {/* SECTION 2: CUSTOMER & PRODUCT */}
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Customer Name <span className="text-danger">*</span></label>
+                                                <input type="text" className="form-control form-select-sm" name="customerName" value={formData.customerName} onChange={handleInputChange} required />
                                             </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label">Notes / Instructions</label>
-                                                <input type="text" className="form-control" name="followUpNotes" value={formData.followUpNotes} onChange={handleInputChange} placeholder="e.g. Call regarding renewal" />
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Product / Plan <span className="text-danger">*</span></label>
+                                                <input type="text" className="form-control form-select-sm" name="productName" value={formData.productName} onChange={handleInputChange} required />
+                                            </div>
+
+                                            {/* SECTION 3: FINANCIALS */}
+                                            <div className="col-md-3">
+                                                <label className="form-label small fw-bold">Num. Lines</label>
+                                                <input type="number" className="form-control form-select-sm" name="numberOfLines" value={formData.numberOfLines} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-3">
+                                                <label className="form-label small fw-bold">MRC ($)</label>
+                                                <input type="number" className="form-control form-select-sm" name="mrc" value={formData.mrc} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-3">
+                                                <label className="form-label small fw-bold">Initial Recharge ($)</label>
+                                                <input type="number" className="form-control form-select-sm" name="initialRecharge" value={formData.initialRecharge} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-3">
+                                                <label className="form-label small fw-bold">One-time Amount ($)</label>
+                                                <input type="number" className="form-control form-select-sm" name="amount" value={formData.amount} onChange={handleInputChange} required />
+                                            </div>
+
+                                            <div className="col-12">
+                                                <label className="form-label small fw-bold">Remarks</label>
+                                                <textarea className="form-control form-select-sm" name="remarks" rows="2" value={formData.remarks} onChange={handleInputChange}></textarea>
+                                            </div>
+
+                                            {/* FOLLOW UP */}
+                                            <div className="col-12 mt-4"><h6 className="text-warning border-bottom pb-2">Follow-up Info</h6></div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Next Follow-up</label>
+                                                <input type="date" className="form-control form-select-sm" name="followUpDate" value={formData.followUpDate} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-8">
+                                                <label className="form-label small fw-bold">Notes</label>
+                                                <input type="text" className="form-control form-select-sm" name="followUpNotes" value={formData.followUpNotes} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                                        <button type="submit" className="btn btn-primary">{isEditing ? 'Update Sale' : 'Save Sale'}</button>
+                                    <div className="modal-footer bg-light">
+                                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowModal(false)}>Close</button>
+                                        <button type="submit" className="btn btn-primary btn-sm">{isEditing ? 'Save Changes' : 'Create Sale'}</button>
                                     </div>
                                 </form>
                             </div>
                         </div>
-                    </div >
-                )}
-
-                {/* DOCUMENTS SECTION */}
-                <div className="row mt-4">
-                    <div className="col-12">
-                        <DepartmentDocuments department="sales" />
                     </div>
-                </div>
-
+                )}
             </div>
-        </section>
+        </section >
     );
 };
 
