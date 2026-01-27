@@ -16,7 +16,9 @@ const UserSchema = new mongoose.Schema({
   },
   isDepartmentHead: { type: Boolean, default: false }, // Can manage entire department
   isManager: { type: Boolean, default: false },        // Can manage team (subtype of department)
-  isSalesManager: { type: Boolean, default: false }    // Legacy support for Tabrez
+  isSalesManager: { type: Boolean, default: false },    // Legacy support for Tabrez
+  title: { type: String },                             // "Manager", "Accounts Manager", etc.
+  permissions: [{ type: String }]                      // ["READ", "CREATE", "UPDATE", "DELETE"]
 });
 
 module.exports = mongoose.model('User', UserSchema);

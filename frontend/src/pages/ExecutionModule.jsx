@@ -10,6 +10,8 @@ const ExecutionModule = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm);
+
     // Manual Work Order State
     const [showWOModal, setShowWOModal] = useState(false);
     const [woData, setWoData] = useState({
@@ -89,9 +91,11 @@ const ExecutionModule = () => {
                 <div className="row mb-2">
                     <div className="col-sm-6"><h1>Order Execution</h1></div>
                     <div className="col-sm-6 text-end">
-                        <button className="btn btn-primary shadow-sm" onClick={() => setShowWOModal(true)}>
-                            <i className="bi bi-plus-lg"></i> Manual Work Order
-                        </button>
+                        {hasPermission('CREATE') && (
+                            <button className="btn btn-primary shadow-sm" onClick={() => setShowWOModal(true)}>
+                                <i className="bi bi-plus-lg"></i> Manual Work Order
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -174,9 +178,11 @@ const ExecutionModule = () => {
                                                         <td className="text-center">{o.serviceLines || (o.numberOfLines || 1) + ' Lines'}</td>
                                                         <td className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</td>
                                                         <td className="text-center">
-                                                            <button className="btn btn-sm btn-success shadow-none" onClick={() => updateStatus(o._id, 'Executed')}>
-                                                                <i className="bi bi-play-fill"></i> Execute
-                                                            </button>
+                                                            {hasPermission('UPDATE') && (
+                                                                <button className="btn btn-sm btn-success shadow-none" onClick={() => updateStatus(o._id, 'Executed')}>
+                                                                    <i className="bi bi-play-fill"></i> Execute
+                                                                </button>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))

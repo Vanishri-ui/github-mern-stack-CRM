@@ -8,17 +8,11 @@ const BillingModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [sales, setSales] = useState([]);
-    const [invoices, setInvoices] = useState([]);
-    const [activeTab, setActiveTab] = useState('billing'); // billing, invoices
     const [loading, setLoading] = useState(true);
-
-    const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-    const [selectedSale, setSelectedSale] = useState(null);
-    const [invoiceItems, setInvoiceItems] = useState([{ description: '', amount: 0 }]);
+    const [activeTab, setActiveTab] = useState('list'); // list, docs
 
     useEffect(() => {
         fetchData();
-        fetchInvoices();
     }, []);
 
     const fetchData = async () => {
@@ -26,110 +20,52 @@ const BillingModule = () => {
             const res = await axios.get('/api/sales');
             setSales(res.data);
             setLoading(false);
-        } catch (e) {
-            console.error(e);
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); setLoading(false); }
     };
 
-    const fetchInvoices = async () => {
+    const updateStatus = async (id, status) => {
         try {
-            const res = await axios.get('/api/invoices');
-            setInvoices(res.data);
-        } catch (e) { console.error(e); }
-    };
-
-    // --- ACTIONS ---
-    const handleGenerateClick = (sale) => {
-        setSelectedSale(sale);
-        setInvoiceItems([{
-            description: `${sale.productName} (${sale.serviceLines || 'No details'})`,
-            amount: sale.amount
-        }]);
-        setShowInvoiceModal(true);
-    };
-
-    const createInvoice = async () => {
-        const total = invoiceItems.reduce((acc, item) => acc + Number(item.amount), 0);
-        try {
-            let saleIdToUse = selectedSale ? selectedSale._id : null;
-
-            if (!saleIdToUse) {
-                const custName = document.getElementById('newCustomerName')?.value;
-                if (!custName) return alert('Customer Name Required');
-
-                const saleRes = await axios.post('/api/sales', {
-                    customerName: custName,
-                    productName: 'Direct Invoice',
-                    amount: total,
-                    status: 'Billed',
-                    agentName: user.name,
-                    date: new Date()
-                });
-                saleIdToUse = saleRes.data._id;
-            }
-
-            await axios.post('/api/invoices', {
-                saleId: saleIdToUse,
-                items: invoiceItems,
-                totalAmount: total,
-                dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            });
-
-            if (saleIdToUse) {
-                await axios.put(`/api/sales/${saleIdToUse}`, { status: 'Billed' });
-            }
-
-            setShowInvoiceModal(false);
+            await axios.put(`/api/sales/${id}`, { status });
             fetchData();
-            fetchInvoices();
-            setActiveTab('invoices');
-            alert('Invoice Generated Successfully');
-        } catch (e) { alert('Failed to create invoice'); }
+        } catch (e) { alert('Failed to update status'); }
     };
 
-    const markPaid = async (id) => {
-        if (window.confirm('Mark this invoice as PAID?')) {
+    const deleteRecord = async (id) => {
+        if (window.confirm('Are you sure you want to PERMANENTLY delete this record?')) {
             try {
-                await axios.put(`/api/invoices/${id}`, { status: 'Paid' });
-                fetchData(); // Refresh sales status
-                fetchInvoices();
-            } catch (e) { alert('Error updating status'); }
-        }
-    };
-
-    const deleteInvoice = async (id) => {
-        if (window.confirm('Are you sure you want to DELETE this invoice? The order will go back to the Billing Queue.')) {
-            try {
-                await axios.delete(`/api/invoices/${id}`);
+                await axios.delete(`/api/sales/${id}`);
                 fetchData();
-                fetchInvoices();
-            } catch (e) { alert('Error deleting invoice'); }
+            } catch (e) { alert('Failed to delete'); }
         }
     };
 
-    // --- UI HELPERS ---
-    const readyToBill = sales.filter(s => s.status === 'Executed');
+    // Filter: Show everything that is past technical execution (Executed, Billed, Paid)
+    const billingItems = sales.filter(s =>
+        (s.status === 'Executed' || s.status === 'Billed' || s.status === 'Paid') &&
+        (!searchQuery || s.customerName.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
-    // --- MAIN ---
+    const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm);
+
     return (
         <section className="content-header">
             <div className="container-fluid">
-                <div className="row mb-3">
-                    <div className="col-md-6"><h1>Billing & Invoices</h1></div>
+                <div className="row mb-3 align-items-center">
+                    <div className="col-md-6">
+                        <h1 className="mb-0">Billing & Collection</h1>
+                        <p className="text-muted small">
+                            User: <span className="fw-bold">{user.name}</span> | Title: <span className="badge bg-dark">{user.title || 'Staff'}</span>
+                            <span className="ms-2 text-primary">{user.permissions?.join(', ')}</span>
+                        </p>
+                    </div>
                 </div>
 
                 <div className="card card-primary card-outline card-outline-tabs shadow-sm">
                     <div className="card-header p-0 border-bottom-0">
-                        <ul className="nav nav-tabs" id="custom-tabs-four-tab" role="tablist">
+                        <ul className="nav nav-tabs" role="tablist">
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'billing' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('billing')}>
-                                    <i className="bi bi-receipt me-2"></i>Billing Queue <span className="badge bg-warning ms-1">{readyToBill.length}</span>
-                                </a>
-                            </li>
-                            <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'invoices' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('invoices')}>
-                                    <i className="bi bi-journal-text me-2"></i>Invoices
+                                <a className={`nav-link ${activeTab === 'list' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('list')}>
+                                    <i className="bi bi-list-columns-reverse me-2"></i>Invoice Management
                                 </a>
                             </li>
                             <li className="nav-item">
@@ -141,37 +77,53 @@ const BillingModule = () => {
                     </div>
 
                     <div className="card-body p-0">
-                        {/* QUEUE */}
-                        {activeTab === 'billing' && (
+                        {activeTab === 'list' && (
                             <div className="table-responsive">
                                 <table className="table table-bordered table-striped table-hover table-sm text-nowrap align-middle mb-0" style={{ fontSize: '0.9rem' }}>
                                     <thead className="table-light text-center">
                                         <tr>
+                                            <th>Status</th>
                                             <th>Date</th>
                                             <th>Customer Name</th>
-                                            <th>Product / Service</th>
-                                            <th>Revenue</th>
-                                            <th>Invoice Status</th>
-                                            <th>Action</th>
+                                            <th>Product</th>
+                                            <th>Amount</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {readyToBill.length === 0 ? (
-                                            <tr><td colSpan="6" className="text-center py-4 text-muted">All orders processed.</td></tr>
+                                        {billingItems.length === 0 ? (
+                                            <tr><td colSpan="6" className="text-center py-4 text-muted">No records found.</td></tr>
                                         ) : (
-                                            readyToBill.filter(s => !searchQuery || s.customerName.toLowerCase().includes(searchQuery.toLowerCase())).map(s => (
+                                            billingItems.map(s => (
                                                 <tr key={s._id}>
+                                                    <td className="text-center">
+                                                        <span className={`badge ${s.status === 'Paid' ? 'bg-success' : s.status === 'Billed' ? 'bg-warning text-dark' : 'bg-secondary'}`}>
+                                                            {s.status === 'Paid' ? 'PAID' : s.status === 'Billed' ? 'INVOICE SENT' : 'NOT SENT'}
+                                                        </span>
+                                                    </td>
                                                     <td className="text-center">{new Date(s.date).toLocaleDateString()}</td>
                                                     <td className="fw-bold">{s.customerName}</td>
                                                     <td>{s.productName}</td>
                                                     <td className="text-end fw-bold text-success">${s.amount.toLocaleString()}</td>
                                                     <td className="text-center">
-                                                        <span className="badge bg-secondary">NOT SENT</span>
-                                                    </td>
-                                                    <td className="text-center">
-                                                        <button className="btn btn-sm btn-dark shadow-sm" onClick={() => handleGenerateClick(s)}>
-                                                            <i className="bi bi-send-plus me-1"></i> Send Invoice
-                                                        </button>
+                                                        <div className="btn-group">
+                                                            {s.status === 'Executed' && hasPermission('UPDATE') && (
+                                                                <button className="btn btn-xs btn-dark" onClick={() => updateStatus(s._id, 'Billed')}>
+                                                                    <i className="bi bi-send-fill me-1"></i> Send Invoice
+                                                                </button>
+                                                            )}
+                                                            {s.status === 'Billed' && hasPermission('UPDATE') && (
+                                                                <button className="btn btn-xs btn-success" onClick={() => updateStatus(s._id, 'Paid')}>
+                                                                    <i className="bi bi-check-circle-fill me-1"></i> Confirm Payment
+                                                                </button>
+                                                            )}
+                                                            {hasPermission('DELETE') && (
+                                                                <button className="btn btn-xs btn-outline-danger ms-1" onClick={() => deleteRecord(s._id)}>
+                                                                    <i className="bi bi-trash"></i>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {s.status === 'Paid' && <span className="text-success small ms-2"><i className="bi bi-patch-check-fill me-1"></i>Settled</span>}
                                                     </td>
                                                 </tr>
                                             ))
@@ -181,60 +133,6 @@ const BillingModule = () => {
                             </div>
                         )}
 
-                        {/* INVOICES */}
-                        {activeTab === 'invoices' && (
-                            <div className="table-responsive">
-                                <table className="table table-bordered table-striped table-hover table-sm text-nowrap align-middle mb-0" style={{ fontSize: '0.9rem' }}>
-                                    <thead className="table-light text-center">
-                                        <tr>
-                                            <th>Inv #</th>
-                                            <th>Date</th>
-                                            <th>Customer Name</th>
-                                            <th>Status</th>
-                                            <th>Payment Info</th>
-                                            <th>Amount</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {invoices.length === 0 ? (
-                                            <tr><td colSpan="6" className="text-center py-4 text-muted">No invoices generated yet.</td></tr>
-                                        ) : (
-                                            invoices.filter(i => !searchQuery || i.customerName.toLowerCase().includes(searchQuery.toLowerCase())).map(inv => (
-                                                <tr key={inv._id}>
-                                                    <td className="text-center fw-bold">{inv.invoiceNumber}</td>
-                                                    <td className="text-center">{new Date(inv.date).toLocaleDateString()}</td>
-                                                    <td className="fw-bold">{inv.customerName}</td>
-                                                    <td className="text-center">
-                                                        <span className={`badge ${inv.status === 'Paid' ? 'bg-success' : 'bg-warning text-dark border shadow-none'}`}>
-                                                            {inv.status === 'Paid' ? 'PAID' : 'INVOICE SENT / UNPAID'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="text-center small text-muted">
-                                                        {inv.status === 'Paid' ? `Confirmed on ${new Date(inv.paymentDate).toLocaleDateString()}` : 'Awaiting Payment'}
-                                                    </td>
-                                                    <td className="text-end fw-bold">${inv.totalAmount.toLocaleString()}</td>
-                                                    <td className="text-center">
-                                                        {inv.status !== 'Paid' && (
-                                                            <>
-                                                                <button className="btn btn-sm btn-success me-1 shadow-sm" onClick={() => markPaid(inv._id)} title="Mark Paid">
-                                                                    <i className="bi bi-check-lg pe-1"></i> Confirm Payment
-                                                                </button>
-                                                                <button className="btn btn-sm btn-danger shadow-sm" onClick={() => deleteInvoice(inv._id)} title="Delete">
-                                                                    <i className="bi bi-trash"></i>
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                        {inv.status === 'Paid' && <span className="text-success small"><i className="bi bi-check2-all me-1"></i>Settled</span>}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                        {/* DOCUMENTS */}
                         {activeTab === 'docs' && (
                             <div className="p-3">
                                 <DepartmentDocuments department="finance" />
@@ -242,68 +140,6 @@ const BillingModule = () => {
                         )}
                     </div>
                 </div>
-
-                {/* MODAL */}
-                {showInvoiceModal && (
-                    <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
-                        <div className="modal-dialog modal-lg">
-                            <div className="modal-content">
-                                <div className="modal-header bg-dark text-white">
-                                    <h5 className="modal-title">{selectedSale ? 'Generate Invoice' : 'Create New Invoice'}</h5>
-                                    <button className="btn-close btn-close-white" onClick={() => setShowInvoiceModal(false)}></button>
-                                </div>
-                                <div className="modal-body">
-                                    {selectedSale ? (
-                                        <div className="alert alert-info py-2">
-                                            Generating invoice for <strong>{selectedSale.customerName}</strong>
-                                        </div>
-                                    ) : (
-                                        <div className="mb-3">
-                                            <label className="form-label fw-bold">Customer Name</label>
-                                            <input className="form-control" placeholder="Enter Customer Name" id="newCustomerName" />
-                                        </div>
-                                    )}
-
-                                    <h6 className="border-bottom pb-2 mt-3">Line Items</h6>
-                                    {invoiceItems.map((item, idx) => (
-                                        <div key={idx} className="row g-2 mb-2">
-                                            <div className="col-8">
-                                                <input className="form-control form-control-sm" placeholder="Description" value={item.description} onChange={e => {
-                                                    const newItems = [...invoiceItems];
-                                                    newItems[idx].description = e.target.value;
-                                                    setInvoiceItems(newItems);
-                                                }} />
-                                            </div>
-                                            <div className="col-4">
-                                                <div className="input-group input-group-sm">
-                                                    <span className="input-group-text">$</span>
-                                                    <input type="number" className="form-control" placeholder="Amount" value={item.amount} onChange={e => {
-                                                        const newItems = [...invoiceItems];
-                                                        newItems[idx].amount = Number(e.target.value);
-                                                        setInvoiceItems(newItems);
-                                                    }} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => setInvoiceItems([...invoiceItems, { description: '', amount: 0 }])}>
-                                        <i className="bi bi-plus-circle me-1"></i>Add Item
-                                    </button>
-
-                                    <div className="mt-3 text-end bg-light p-2 rounded">
-                                        <h5 className="mb-0">Total: <span className="text-primary">${invoiceItems.reduce((a, b) => a + Number(b.amount), 0).toLocaleString()}</span></h5>
-                                    </div>
-                                </div>
-                                <div className="modal-footer bg-light">
-                                    <button className="btn btn-secondary btn-sm" onClick={() => setShowInvoiceModal(false)}>Cancel</button>
-                                    <button className="btn btn-success btn-sm" onClick={createInvoice}>
-                                        <i className="bi bi-check-lg me-1"></i>Create Invoice
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </section>
     );

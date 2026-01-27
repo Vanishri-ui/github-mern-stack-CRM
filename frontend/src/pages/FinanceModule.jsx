@@ -8,7 +8,6 @@ const FinanceModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [sales, setSales] = useState([]);
-    const [invoices, setInvoices] = useState([]);
     const [activeTab, setActiveTab] = useState('revenue'); // revenue, am_perf, docs
     const [loading, setLoading] = useState(true);
     const [perfFilter, setPerfFilter] = useState('All'); // All, Today, Month
@@ -19,12 +18,8 @@ const FinanceModule = () => {
 
     const fetchData = async () => {
         try {
-            const [salesRes, invRes] = await Promise.all([
-                axios.get('/api/sales'),
-                axios.get('/api/invoices')
-            ]);
-            setSales(salesRes.data);
-            setInvoices(invRes.data);
+            const res = await axios.get('/api/sales');
+            setSales(res.data);
             setLoading(false);
         } catch (e) {
             console.error(e);
@@ -33,9 +28,9 @@ const FinanceModule = () => {
     };
 
     // --- CALCULATIONS ---
-    const totalRevenue = sales.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-    const totalBilled = invoices.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
-    const totalCollected = invoices.filter(i => i.status === 'Paid').reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
+    const totalRevenue = sales.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const totalBilled = sales.filter(s => s.status === 'Billed' || s.status === 'Paid').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const totalCollected = sales.filter(s => s.status === 'Paid').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
     const pendingCollection = totalBilled - totalCollected;
 
     // --- AM PERFORMANCE ---
@@ -43,15 +38,14 @@ const FinanceModule = () => {
         // Only count 'Paid' sales as performance
         if (curr.status !== 'Paid') return acc;
 
-        // Date Filtering based on Invoice Payment Date
-        const linkedInv = invoices.find(inv => inv.sale === curr._id);
-        const pDate = linkedInv?.paymentDate ? new Date(linkedInv.paymentDate) : new Date(curr.date);
+        // Date Filtering based on Sale Date (since we normalized statuses)
+        const sDate = new Date(curr.date);
         const today = new Date();
 
         if (perfFilter === 'Today') {
-            if (pDate.toLocaleDateString() !== today.toLocaleDateString()) return acc;
+            if (sDate.toLocaleDateString() !== today.toLocaleDateString()) return acc;
         } else if (perfFilter === 'Month') {
-            if (pDate.getMonth() !== today.getMonth() || pDate.getFullYear() !== today.getFullYear()) return acc;
+            if (sDate.getMonth() !== today.getMonth() || sDate.getFullYear() !== today.getFullYear()) return acc;
         }
 
         const amName = curr.agentName || curr.salesPerson?.name || 'Unassigned';
@@ -67,7 +61,7 @@ const FinanceModule = () => {
                 customer: curr.customerName,
                 amount: Number(curr.amount) || 0,
                 mrc: Number(curr.mrc) || 0,
-                date: pDate.toLocaleDateString()
+                date: sDate.toLocaleDateString()
             });
         }
         return acc;

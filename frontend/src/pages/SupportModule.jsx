@@ -12,6 +12,8 @@ const SupportModule = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('tickets'); // tickets, customers, docs
 
+    const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm);
+
     // Modal State
     const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState('');
@@ -32,6 +34,8 @@ const SupportModule = () => {
         mrc: '',
         initialRecharge: '',
         virtualNumber: '',
+        workOrderNumber: '',
+        numberOfLines: 1,
         remarks: ''
     });
 
@@ -88,7 +92,7 @@ const SupportModule = () => {
                 salesPerson: user.id
             });
             setShowSaleModal(false);
-            setSaleData({ customerName: '', productName: '', amount: '', agentName: '', date: new Date().toISOString().split('T')[0], mrc: '', initialRecharge: '', virtualNumber: '', remarks: '' });
+            setSaleData({ customerName: '', productName: '', amount: '', agentName: '', date: new Date().toISOString().split('T')[0], mrc: '', initialRecharge: '', virtualNumber: '', workOrderNumber: '', numberOfLines: 1, remarks: '' });
             fetchData();
             alert('Customer data added successfully');
         } catch (e) { alert('Failed to add data'); }
@@ -117,9 +121,11 @@ const SupportModule = () => {
                                 <i className="bi bi-plus-lg me-1"></i> New Ticket
                             </button>
                         ) : activeTab === 'customers' ? (
-                            <button className="btn btn-success shadow-sm" onClick={() => setShowSaleModal(true)}>
-                                <i className="bi bi-person-plus-fill me-1"></i> Add Data
-                            </button>
+                            hasPermission('CREATE') && (
+                                <button className="btn btn-success shadow-sm" onClick={() => setShowSaleModal(true)}>
+                                    <i className="bi bi-person-plus-fill me-1"></i> Add Data
+                                </button>
+                            )
                         ) : null}
                     </div>
                 </div>
@@ -191,7 +197,7 @@ const SupportModule = () => {
                                                         </td>
                                                         <td className="text-center">{t.user ? t.user.name : 'Unknown'}</td>
                                                         <td className="text-center">
-                                                            {(user.role === 'admin' || user.department === 'tech') && t.status !== 'Resolved' && (
+                                                            {(user.role === 'admin' || user.department === 'tech') && t.status !== 'Resolved' && hasPermission('UPDATE') && (
                                                                 <button className="btn btn-sm btn-success shadow-sm" onClick={() => handleResolve(t._id)}>
                                                                     <i className="bi bi-check-lg"></i> Solve
                                                                 </button>
@@ -377,6 +383,14 @@ const SupportModule = () => {
                                             <div className="col-md-4">
                                                 <label className="form-label small fw-bold">Date</label>
                                                 <input type="date" className="form-control form-control-sm" value={saleData.date} onChange={e => setSaleData({ ...saleData, date: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Work Order #</label>
+                                                <input className="form-control form-control-sm" value={saleData.workOrderNumber} onChange={e => setSaleData({ ...saleData, workOrderNumber: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Number of Lines</label>
+                                                <input type="number" className="form-control form-control-sm" value={saleData.numberOfLines} onChange={e => setSaleData({ ...saleData, numberOfLines: e.target.value })} />
                                             </div>
                                             <div className="col-md-12">
                                                 <label className="form-label small fw-bold">Description/Notes</label>

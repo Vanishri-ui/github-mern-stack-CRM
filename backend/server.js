@@ -116,7 +116,9 @@ app.post("/api/auth/register", async (req, res) => {
           department: user.department,
           isSalesManager: user.isSalesManager,
           isDepartmentHead: user.isDepartmentHead,
-          isManager: user.isManager
+          isManager: user.isManager,
+          title: user.title,
+          permissions: user.permissions
         }
       });
     });
@@ -157,7 +159,9 @@ app.post("/api/auth/login", async (req, res) => {
           department: user.department,
           isSalesManager: user.isSalesManager,
           isDepartmentHead: user.isDepartmentHead,
-          isManager: user.isManager
+          isManager: user.isManager,
+          title: user.title,
+          permissions: user.permissions
         }
       });
     });

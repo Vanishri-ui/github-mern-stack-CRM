@@ -1,0 +1,107 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const User = require('./backend/models/User');
+
+const MONGO_URI = "mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0";
+
+const usersToUpdate = [
+    {
+        name: "Shiva Ganesh",
+        email: "shiva@viva.com",
+        password: "password123",
+        role: "finance",
+        department: "finance",
+        title: "Manager",
+        isManager: true,
+        permissions: ["READ", "CREATE", "UPDATE", "DELETE"]
+    },
+    {
+        name: "Sailaja",
+        email: "sailaja@viva.com",
+        password: "password123",
+        role: "finance",
+        department: "finance",
+        title: "Accounts Manager",
+        isManager: true,
+        permissions: ["READ", "CREATE", "UPDATE", "DELETE"]
+    },
+    {
+        name: "Kalaivani",
+        email: "kalaivani@viva.com",
+        password: "password123",
+        role: "finance",
+        department: "finance",
+        title: "Collection Team Lead",
+        isManager: true,
+        permissions: ["READ", "UPDATE", "DELETE"]
+    },
+    {
+        name: "Huzefa",
+        email: "huzefa@viva.com",
+        password: "password123",
+        role: "sales",
+        department: "sales",
+        title: "Sales Specialist",
+        permissions: ["CREATE", "UPDATE", "DELETE"]
+    },
+    {
+        name: "Suman",
+        email: "suman@viva.com",
+        password: "password123",
+        role: "tech",
+        department: "tech",
+        title: "Manager",
+        isManager: true,
+        permissions: ["CREATE", "UPDATE", "DELETE"]
+    },
+    {
+        name: "Sarath",
+        email: "sarath@viva.com",
+        password: "password123",
+        role: "tech",
+        department: "tech",
+        permissions: ["READ", "UPDATE"]
+    },
+    {
+        name: "Tharun",
+        email: "tharun@viva.com",
+        password: "password123",
+        role: "tech",
+        department: "tech",
+        permissions: ["READ", "UPDATE"]
+    }
+];
+
+const seedUsers = async () => {
+    try {
+        await mongoose.connect(MONGO_URI);
+        console.log("Connected to MongoDB...");
+
+        for (const userData of usersToUpdate) {
+            let user = await User.findOne({ email: userData.email });
+            if (user) {
+                console.log(`Updating ${userData.name}...`);
+                Object.assign(user, userData);
+                if (userData.password) {
+                    const salt = await bcrypt.genSalt(10);
+                    user.password = await bcrypt.hash(userData.password, salt);
+                }
+                await user.save();
+            } else {
+                console.log(`Creating ${userData.name}...`);
+                const salt = await bcrypt.genSalt(10);
+                userData.password = await bcrypt.hash(userData.password, salt);
+                user = new User(userData);
+                await user.save();
+            }
+        }
+
+        console.log("Users seeded successfully!");
+        process.exit();
+    } catch (err) {
+        console.error(err);
+        process.exit(1);
+    }
+};
+
+seedUsers();

@@ -109,6 +109,8 @@ const SalesModule = () => {
         }
     };
 
+    const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm);
+
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -196,9 +198,11 @@ const SalesModule = () => {
                         <h1 className="fw-bold text-dark">Sales Orders</h1>
                     </div>
                     <div className="col-sm-6 text-end">
-                        <button className="btn btn-primary shadow-sm" onClick={openCreateModal}>
-                            <i className="bi bi-plus-lg me-1"></i> New Sale
-                        </button>
+                        {hasPermission('CREATE') && (
+                            <button className="btn btn-primary shadow-sm" onClick={openCreateModal}>
+                                <i className="bi bi-plus-lg me-1"></i> New Sale
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -318,7 +322,14 @@ const SalesModule = () => {
                                                     <td className="text-primary text-center fw-bold">{sale.virtualNumber || '-'}</td>
                                                     <td className="text-center">{sale.numberOfLines}</td>
                                                     <td className="text-end text-success fw-bold">${Number(sale.mrc).toLocaleString()}</td>
-                                                    <td>{sale.agentName || sale.salesPerson?.name}</td>
+                                                    <td>
+                                                        <span className="fw-bold">{sale.agentName || sale.salesPerson?.name}</span>
+                                                        {sale.salesPerson?.title && (
+                                                            <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                                                                {sale.salesPerson.title} {sale.salesPerson.name === 'Huzefa' ? '(Under Tabrez)' : ''}
+                                                            </div>
+                                                        )}
+                                                    </td>
                                                     <td className="text-center">
                                                         <span className={`badge ${sale.status === 'Billed' ? 'bg-success' :
                                                             sale.status === 'Executed' ? 'bg-primary' : 'bg-warning text-dark'
@@ -327,17 +338,18 @@ const SalesModule = () => {
                                                         </span>
                                                     </td>
                                                     <td className="text-center">
-                                                        {(user?.role === 'admin' || user?.isSalesManager ||
-                                                            (sale.salesPerson && (sale.salesPerson._id === user?.id || sale.salesPerson === user?.id))) && (
-                                                                <>
-                                                                    <button className="btn btn-xs btn-outline-primary me-1" onClick={() => openEditModal(sale)}>
-                                                                        <i className="bi bi-pencil"></i>
-                                                                    </button>
-                                                                    <button className="btn btn-xs btn-outline-danger" onClick={() => handleDelete(sale._id)}>
-                                                                        <i className="bi bi-trash"></i>
-                                                                    </button>
-                                                                </>
+                                                        <div className="btn-group">
+                                                            {hasPermission('UPDATE') && (user?.role === 'admin' || user?.isSalesManager || (sale.salesPerson && (sale.salesPerson._id === user?.id || sale.salesPerson === user?.id))) && (
+                                                                <button className="btn btn-xs btn-outline-primary" onClick={() => openEditModal(sale)}>
+                                                                    <i className="bi bi-pencil"></i>
+                                                                </button>
                                                             )}
+                                                            {hasPermission('DELETE') && (user?.role === 'admin' || user?.isSalesManager || (sale.salesPerson && (sale.salesPerson._id === user?.id || sale.salesPerson === user?.id))) && (
+                                                                <button className="btn btn-xs btn-outline-danger ms-1" onClick={() => handleDelete(sale._id)}>
+                                                                    <i className="bi bi-trash"></i>
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}

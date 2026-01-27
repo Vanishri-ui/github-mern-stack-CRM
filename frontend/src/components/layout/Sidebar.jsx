@@ -35,6 +35,26 @@ const Sidebar = () => {
                     <span className="brand-text fw-light text-uppercase tracking-wider">{getBrandName()}</span>
                 </Link>
             </div>
+            <div className="sidebar-user p-3 border-bottom border-secondary">
+                <div className="d-flex align-items-center">
+                    <div className="flex-shrink-0">
+                        <i className="bi bi-person-circle fs-3 text-light"></i>
+                    </div>
+                    <div className="flex-grow-1 ms-3">
+                        <h6 className="mb-0 text-white small fw-bold">{user?.name}</h6>
+                        <small className="text-secondary d-block" style={{ fontSize: '0.7rem' }}>
+                            {user?.title || user?.role?.toUpperCase()}
+                        </small>
+                    </div>
+                </div>
+                {user?.permissions && user.permissions.length > 0 && (
+                    <div className="mt-2 d-flex flex-wrap gap-1">
+                        {user.permissions.map(p => (
+                            <span key={p} className="badge bg-secondary" style={{ fontSize: '0.6rem' }}>{p}</span>
+                        ))}
+                    </div>
+                )}
+            </div>
             <div className="sidebar-wrapper">
                 <nav className="mt-2">
                     <ul className="nav sidebar-menu flex-column" role="menu">
