@@ -8,7 +8,6 @@ const SalesModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [sales, setSales] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     // Modal State
     const [showModal, setShowModal] = useState(false);
@@ -273,7 +272,7 @@ const SalesModule = () => {
                             {reminders.map(r => (
                                 <li key={r._id} className="mb-1">
                                     <span className="fw-bold">{r.customerName}</span> ({r.productName}) - {r.followUpNotes}
-                                    <a href="#" className="ms-2 text-primary" onClick={(e) => { e.preventDefault(); openEditModal(r); }}>View</a>
+                                    <button className="btn btn-link py-0 ms-2 text-primary" onClick={(e) => { e.preventDefault(); openEditModal(r); }}>View</button>
                                 </li>
                             ))}
                         </ul>
@@ -285,14 +284,14 @@ const SalesModule = () => {
                     <div className="card-header p-0 border-bottom-0">
                         <ul className="nav nav-tabs" id="sales-tabs" role="tablist">
                             <li className="nav-item">
-                                <a className="nav-link active" id="sales-data-tab" data-bs-toggle="pill" href="#sales-data" role="tab">
+                                <span className="nav-link active" id="sales-data-tab" data-bs-toggle="pill" role="button" href="#sales-data">
                                     <i className="bi bi-table me-2"></i>Sales Data
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className="nav-link" id="sales-docs-tab" data-bs-toggle="pill" href="#sales-docs" role="tab">
+                                <span className="nav-link" id="sales-docs-tab" data-bs-toggle="pill" role="button" href="#sales-docs">
                                     <i className="bi bi-file-earmark-text me-2"></i>Sales Documents
-                                </a>
+                                </span>
                             </li>
                         </ul>
                     </div>

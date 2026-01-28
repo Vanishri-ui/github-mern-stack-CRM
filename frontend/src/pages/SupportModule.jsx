@@ -9,7 +9,6 @@ const SupportModule = () => {
     const { searchQuery } = useContext(SearchContext);
     const [tickets, setTickets] = useState([]);
     const [sales, setSales] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('tickets'); // tickets, customers, docs
 
     const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm);
@@ -108,16 +107,6 @@ const SupportModule = () => {
     };
 
     // --- UI HELPERS ---
-    const uniqueCustomers = [...new Set(sales.map(s => s.customerName))].map(name => {
-        // Find all products for this customer
-        const customerSales = sales.filter(s => s.customerName === name);
-        return {
-            name,
-            products: customerSales.map(s => s.productName).join(', '),
-            status: customerSales.some(s => s.status === 'Executed') ? 'Active' : 'Pending',
-            totalOrders: customerSales.length
-        };
-    });
 
     return (
         <section className="content-header">
@@ -144,19 +133,19 @@ const SupportModule = () => {
                     <div className="card-header p-0 border-bottom-0">
                         <ul className="nav nav-tabs" id="custom-tabs-four-tab" role="tablist">
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'tickets' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('tickets')}>
+                                <span className={`nav-link ${activeTab === 'tickets' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('tickets')}>
                                     <i className="bi bi-ticket-detailed me-2"></i>Tickets <span className="badge bg-danger ms-1">{tickets.filter(t => t.status !== 'Resolved').length}</span>
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'customers' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('customers')}>
+                                <span className={`nav-link ${activeTab === 'customers' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('customers')}>
                                     <i className="bi bi-people me-2"></i>Customer Database
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('docs')}>
+                                <span className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('docs')}>
                                     <i className="bi bi-folder2-open me-2"></i>Documents
-                                </a>
+                                </span>
                             </li>
                         </ul>
                     </div>

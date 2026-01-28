@@ -8,7 +8,6 @@ const ExecutionModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm);
 
@@ -126,19 +125,19 @@ const ExecutionModule = () => {
                     <div className="card-header p-0 border-bottom-0">
                         <ul className="nav nav-tabs" id="execution-tabs" role="tablist">
                             <li className="nav-item">
-                                <a className="nav-link active" id="pending-tab" data-bs-toggle="pill" href="#pending" role="tab">
+                                <span className="nav-link active" id="pending-tab" data-bs-toggle="pill" role="button" href="#pending">
                                     <i className="bi bi-hourglass-split me-2"></i>Pending Orders <span className="badge bg-warning ms-1 text-dark">{pendingOrders.length}</span>
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className="nav-link" id="history-tab" data-bs-toggle="pill" href="#history" role="tab">
+                                <span className="nav-link" id="history-tab" data-bs-toggle="pill" role="button" href="#history">
                                     <i className="bi bi-clock-history me-2"></i>Execution History
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className="nav-link" id="docs-tab" data-bs-toggle="pill" href="#docs" role="tab">
+                                <span className="nav-link" id="docs-tab" data-bs-toggle="pill" role="button" href="#docs">
                                     <i className="bi bi-file-earmark-text me-2"></i>Documents
-                                </a>
+                                </span>
                             </li>
                         </ul>
                     </div>

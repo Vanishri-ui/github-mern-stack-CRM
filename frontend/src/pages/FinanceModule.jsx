@@ -9,7 +9,6 @@ const FinanceModule = () => {
     const { searchQuery } = useContext(SearchContext);
     const [sales, setSales] = useState([]);
     const [activeTab, setActiveTab] = useState('revenue'); // revenue, am_perf, docs
-    const [loading, setLoading] = useState(true);
     const [perfFilter, setPerfFilter] = useState('All'); // All, Today, Month
 
     useEffect(() => {
@@ -125,19 +124,19 @@ const FinanceModule = () => {
                     <div className="card-header p-0 border-bottom-0">
                         <ul className="nav nav-tabs" id="custom-tabs-four-tab" role="tablist">
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'revenue' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('revenue')}>
+                                <span className={`nav-link ${activeTab === 'revenue' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('revenue')}>
                                     <i className="bi bi-table me-2"></i>Revenue Ledger
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'am_perf' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('am_perf')}>
+                                <span className={`nav-link ${activeTab === 'am_perf' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('am_perf')}>
                                     <i className="bi bi-person-badge me-2"></i>AM Performance
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('docs')}>
+                                <span className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('docs')}>
                                     <i className="bi bi-folder2-open me-2"></i>Finance Documents
-                                </a>
+                                </span>
                             </li>
                         </ul>
                     </div>

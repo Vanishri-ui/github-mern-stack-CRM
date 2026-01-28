@@ -35,10 +35,10 @@ const Header = () => {
 
                 <ul className="navbar-nav ms-auto">
                     <li className="nav-item dropdown user-menu">
-                        <a href="#" className="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        <span className="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button">
                             <i className="bi bi-person-circle img-circle elevation-2"></i>
                             <span className="d-none d-md-inline ms-2">{user ? user.name : 'User'}</span>
-                        </a>
+                        </span>
                         <ul className="dropdown-menu dropdown-menu-lg dropdown-menu-end">
                             <li className="user-header text-bg-primary">
                                 <i className="bi bi-person-circle fs-1"></i>

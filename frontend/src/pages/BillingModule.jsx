@@ -8,7 +8,6 @@ const BillingModule = () => {
     const { user } = useContext(AuthContext);
     const { searchQuery } = useContext(SearchContext);
     const [sales, setSales] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('list'); // list, docs
 
     useEffect(() => {
@@ -64,14 +63,14 @@ const BillingModule = () => {
                     <div className="card-header p-0 border-bottom-0">
                         <ul className="nav nav-tabs" role="tablist">
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'list' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('list')}>
+                                <span className={`nav-link ${activeTab === 'list' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('list')}>
                                     <i className="bi bi-list-columns-reverse me-2"></i>Invoice Management
-                                </a>
+                                </span>
                             </li>
                             <li className="nav-item">
-                                <a className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} href="#" onClick={() => setActiveTab('docs')}>
+                                <span className={`nav-link ${activeTab === 'docs' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('docs')}>
                                     <i className="bi bi-file-earmark-text me-2"></i>Documents
-                                </a>
+                                </span>
                             </li>
                         </ul>
                     </div>
