@@ -166,11 +166,24 @@ const SalesModule = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            if (isEditing) {
-                await axios.put(`/api/sales/${currentId}`, formData);
-            } else {
-                await axios.post('/api/sales', formData);
+            let dataToSend = { ...formData };
+            const isUpgrade = dataToSend.orderType === 'Upgrade';
+
+            // Logic: if stopped/renewal becomes continuing
+            if (dataToSend.orderType === 'Renewal') {
+                dataToSend.status = 'Continuing';
             }
+
+            if (isEditing) {
+                await axios.put(`/api/sales/${currentId}`, dataToSend);
+            } else {
+                await axios.post('/api/sales', dataToSend);
+            }
+
+            if (isUpgrade) {
+                alert(`🚀 UPGRADE ALERT: Customer "${dataToSend.customerName}" has upgraded their lines! All teams have been notified.`);
+            }
+
             setShowModal(false);
             fetchSales();
         } catch (err) {
@@ -391,6 +404,7 @@ const SalesModule = () => {
                                                     <option>Upgrade</option>
                                                     <option>Downgrade</option>
                                                     <option>Renewal</option>
+                                                    <option>Continuing</option>
                                                 </select>
                                             </div>
                                             <div className="col-md-3">

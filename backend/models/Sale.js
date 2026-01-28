@@ -9,13 +9,13 @@ const SaleSchema = new mongoose.Schema({
     agentName: { type: String }, // Account Manager
     status: {
         type: String,
-        enum: ['Pending Execution', 'Executed', 'Billed', 'Paid', 'Cancelled'],
+        enum: ['Pending Execution', 'Executed', 'Billed', 'Paid', 'Cancelled', 'Stopped', 'Continuing'],
         default: 'Pending Execution'
     },
     serviceLines: { type: String }, // Description of lines/service
 
     // NEW FIELDS as per user request
-    orderType: { type: String, default: 'New Scale' }, // New Sale, Upgrade, Downgrade, etc.
+    orderType: { type: String, default: 'New Sale' }, // New Sale, Upgrade, Downgrade, etc.
     mrc: { type: Number, default: 0 }, // Monthly Recurring Charge
     initialRecharge: { type: Number, default: 0 },
     numberOfLines: { type: Number, default: 1 },

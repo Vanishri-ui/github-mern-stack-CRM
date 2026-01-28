@@ -98,6 +98,15 @@ const SupportModule = () => {
         } catch (e) { alert('Failed to add data'); }
     };
 
+    const handleDeleteSale = async (id) => {
+        if (window.confirm('Are you sure you want to PERMANENTLY delete this customer record?')) {
+            try {
+                await axios.delete(`/api/sales/${id}`);
+                fetchData();
+            } catch (e) { alert('Failed to delete'); }
+        }
+    };
+
     // --- UI HELPERS ---
     const uniqueCustomers = [...new Set(sales.map(s => s.customerName))].map(name => {
         // Find all products for this customer
@@ -226,6 +235,7 @@ const SupportModule = () => {
                                             <th>MRC</th>
                                             <th>Initial Recharge</th>
                                             <th>Description/Notes</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -257,6 +267,13 @@ const SupportModule = () => {
                                                     <td className="text-end fw-bold text-success">${(s.mrc || 0).toLocaleString()}</td>
                                                     <td className="text-end fw-bold">${(s.initialRecharge || 0).toLocaleString()}</td>
                                                     <td className="text-wrap" style={{ minWidth: '200px' }}>{s.remarks || s.serviceLines || '-'}</td>
+                                                    <td className="text-center">
+                                                        {hasPermission('DELETE') && (
+                                                            <button className="btn btn-xs btn-outline-danger" onClick={() => handleDeleteSale(s._id)}>
+                                                                <i className="bi bi-trash"></i>
+                                                            </button>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}
