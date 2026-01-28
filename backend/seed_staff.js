@@ -6,6 +6,29 @@ const MONGO_URI = "mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.
 
 const usersToUpdate = [
     {
+        name: "Gopinath",
+        email: "gopinath@viva.com",
+        password: "gopi2026",
+        role: "finance",
+        department: "finance",
+        title: "Finance Head (R, C, U, D)",
+        isManager: true,
+        isDepartmentHead: true,
+        permissions: ["READ", "CREATE", "UPDATE", "DELETE"]
+    },
+    {
+        name: "Mohammad Tabrez",
+        email: "tabrez@viva.com",
+        password: "tabrez2026",
+        role: "sales",
+        department: "sales",
+        title: "Head of Sales (R, C, U, D)",
+        isManager: true,
+        isDepartmentHead: true,
+        isSalesManager: true,
+        permissions: ["READ", "CREATE", "UPDATE", "DELETE"]
+    },
+    {
         name: "Shiva Ganesh",
         email: "shiva@viva.com",
         password: "vivaadmin2025",
@@ -47,12 +70,13 @@ const usersToUpdate = [
     {
         name: "Suman",
         email: "suman@viva.com",
-        password: "vivaadmin2025",
+        password: "suman2026",
         role: "tech",
         department: "tech",
-        title: "Manager (C, U, D)",
+        title: "Support Manager (R, C, U, D)",
         isManager: true,
-        permissions: ["CREATE", "UPDATE", "DELETE"]
+        isDepartmentHead: true,
+        permissions: ["READ", "CREATE", "UPDATE", "DELETE"]
     },
     {
         name: "Sarath",

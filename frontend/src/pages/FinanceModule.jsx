@@ -11,6 +11,18 @@ const FinanceModule = () => {
     const [activeTab, setActiveTab] = useState('revenue'); // revenue, am_perf, docs
     const [perfFilter, setPerfFilter] = useState('All'); // All, Today, Month
 
+    const [showModal, setShowModal] = useState(false);
+    const [formData, setFormData] = useState({
+        customerName: '',
+        productName: '',
+        amount: '',
+        agentName: '',
+        date: new Date().toISOString().split('T')[0],
+        status: 'Paid',
+        mrc: '0',
+        initialRecharge: '0'
+    });
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -23,6 +35,35 @@ const FinanceModule = () => {
             console.error(e);
         }
     };
+
+    const handleInputChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to PERMANENTLY delete this record?')) {
+            try {
+                await axios.delete(`/api/sales/${id}`);
+                fetchData();
+            } catch (e) {
+                alert('Error deleting record');
+            }
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/api/sales', formData);
+            setShowModal(false);
+            setFormData({ customerName: '', productName: '', amount: '', agentName: '', date: new Date().toISOString().split('T')[0], status: 'Paid', mrc: '0', initialRecharge: '0' });
+            fetchData();
+        } catch (e) {
+            alert('Error creating record');
+        }
+    };
+
+    const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm) || user.isDepartmentHead;
 
     // --- CALCULATIONS ---
     const totalRevenue = sales.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
@@ -73,8 +114,15 @@ const FinanceModule = () => {
     return (
         <section className="content-header">
             <div className="container-fluid">
-                <div className="row mb-3">
+                <div className="row mb-3 align-items-center">
                     <div className="col-md-6"><h1>Finance Overview</h1></div>
+                    <div className="col-md-6 text-end">
+                        {hasPermission('CREATE') && (
+                            <button className="btn btn-primary shadow-sm" onClick={() => setShowModal(true)}>
+                                <i className="bi bi-plus-lg me-1"></i> Add Record
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* STATS CARDS */}
@@ -153,6 +201,7 @@ const FinanceModule = () => {
                                             <th>Sales Agent</th>
                                             <th>Status</th>
                                             <th>Amount</th>
+                                            {hasPermission('DELETE') && <th>Action</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -171,6 +220,13 @@ const FinanceModule = () => {
                                                         </span>
                                                     </td>
                                                     <td className="text-end fw-bold">${s.amount.toLocaleString()}</td>
+                                                    {hasPermission('DELETE') && (
+                                                        <td className="text-center">
+                                                            <button className="btn btn-xs btn-outline-danger" onClick={() => handleDelete(s._id)}>
+                                                                <i className="bi bi-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))
                                         )}
@@ -243,6 +299,65 @@ const FinanceModule = () => {
 
                     </div>
                 </div>
+                {/* CREATE MODAL */}
+                {showModal && (
+                    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog modal-lg">
+                            <div className="modal-content">
+                                <div className="modal-header bg-primary text-white">
+                                    <h5 className="modal-title">Add Finance Record</h5>
+                                    <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+                                </div>
+                                <form onSubmit={handleSubmit}>
+                                    <div className="modal-body">
+                                        <div className="row g-3">
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Customer Name</label>
+                                                <input type="text" className="form-control" name="customerName" value={formData.customerName} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Product</label>
+                                                <input type="text" className="form-control" name="productName" value={formData.productName} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Amount ($)</label>
+                                                <input type="number" className="form-control" name="amount" value={formData.amount} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Agent Name</label>
+                                                <input type="text" className="form-control" name="agentName" value={formData.agentName} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Date</label>
+                                                <input type="date" className="form-control" name="date" value={formData.date} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">MRC ($)</label>
+                                                <input type="number" className="form-control" name="mrc" value={formData.mrc} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Initial Recharge ($)</label>
+                                                <input type="number" className="form-control" name="initialRecharge" value={formData.initialRecharge} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Status</label>
+                                                <select className="form-select" name="status" value={formData.status} onChange={handleInputChange}>
+                                                    <option>Paid</option>
+                                                    <option>Billed</option>
+                                                    <option>Executed</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
+                                        <button type="submit" className="btn btn-primary">Save Record</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );

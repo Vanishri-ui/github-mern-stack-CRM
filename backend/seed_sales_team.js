@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
 // Connect to MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/merncrud')
+mongoose.connect('mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0')
     .then(() => console.log('MongoDB Connected'))
     .catch(err => console.log(err));
 

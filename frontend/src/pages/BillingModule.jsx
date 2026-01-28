@@ -9,6 +9,14 @@ const BillingModule = () => {
     const { searchQuery } = useContext(SearchContext);
     const [sales, setSales] = useState([]);
     const [activeTab, setActiveTab] = useState('list'); // list, docs
+    const [showModal, setShowModal] = useState(false);
+    const [formData, setFormData] = useState({
+        customerName: '',
+        productName: '',
+        amount: '',
+        date: new Date().toISOString().split('T')[0],
+        status: 'Billed'
+    });
 
     useEffect(() => {
         fetchData();
@@ -21,6 +29,22 @@ const BillingModule = () => {
         } catch (e) {
             console.error(e);
         }
+    };
+
+    const handleCreate = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post('/api/sales', formData);
+            setShowModal(false);
+            setFormData({ customerName: '', productName: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'Billed' });
+            fetchData();
+        } catch (e) {
+            alert('Failed to create invoice');
+        }
+    };
+
+    const handleInputChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const updateStatus = async (id, status) => {
@@ -57,6 +81,13 @@ const BillingModule = () => {
                             User: <span className="fw-bold">{user.name}</span> | Title: <span className="badge bg-dark">{user.title || 'Staff'}</span>
                             <span className="ms-2 text-primary">{user.permissions?.join(', ')}</span>
                         </p>
+                    </div>
+                    <div className="col-md-6 text-end">
+                        {hasPermission('CREATE') && (
+                            <button className="btn btn-primary shadow-sm" onClick={() => setShowModal(true)}>
+                                <i className="bi bi-receipt me-1"></i> Create Invoice
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -140,6 +171,45 @@ const BillingModule = () => {
                         )}
                     </div>
                 </div>
+                {/* CREATE MODAL */}
+                {showModal && (
+                    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog">
+                            <div className="modal-content">
+                                <div className="modal-header bg-primary text-white">
+                                    <h5 className="modal-title">New Invoice Entry</h5>
+                                    <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+                                </div>
+                                <form onSubmit={handleCreate}>
+                                    <div className="modal-body">
+                                        <div className="mb-3">
+                                            <label className="form-label small fw-bold">Customer Name</label>
+                                            <input type="text" className="form-control" name="customerName" value={formData.customerName} onChange={handleInputChange} required />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label small fw-bold">Product</label>
+                                            <input type="text" className="form-control" name="productName" value={formData.productName} onChange={handleInputChange} required />
+                                        </div>
+                                        <div className="row">
+                                            <div className="col-md-6 mb-3">
+                                                <label className="form-label small fw-bold">Amount ($)</label>
+                                                <input type="number" className="form-control" name="amount" value={formData.amount} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-6 mb-3">
+                                                <label className="form-label small fw-bold">Date</label>
+                                                <input type="date" className="form-control" name="date" value={formData.date} onChange={handleInputChange} required />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
+                                        <button type="submit" className="btn btn-primary">Create Invoice</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );
