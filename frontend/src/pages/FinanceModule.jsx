@@ -19,10 +19,8 @@ const FinanceModule = () => {
         try {
             const res = await axios.get('/api/sales');
             setSales(res.data);
-            setLoading(false);
         } catch (e) {
             console.error(e);
-            setLoading(false);
         }
     };
 

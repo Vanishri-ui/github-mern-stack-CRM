@@ -30,10 +30,8 @@ const ExecutionModule = () => {
         try {
             const res = await axios.get('/api/sales');
             setOrders(res.data);
-            setLoading(false);
         } catch (e) {
             console.error(e);
-            setLoading(false);
         }
     };
 

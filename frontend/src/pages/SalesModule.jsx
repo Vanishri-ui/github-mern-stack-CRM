@@ -101,10 +101,8 @@ const SalesModule = () => {
         try {
             const res = await axios.get('/api/sales');
             setSales(res.data);
-            setLoading(false);
         } catch (err) {
             console.error(err);
-            setLoading(false);
         }
     };
 

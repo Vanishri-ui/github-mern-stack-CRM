@@ -50,8 +50,7 @@ const SupportModule = () => {
             ]);
             setTickets(ticketRes.data);
             setSales(saleRes.data);
-            setLoading(false);
-        } catch (e) { console.error(e); setLoading(false); }
+        } catch (e) { console.error(e); }
     };
 
     const fetchTickets = async () => {
