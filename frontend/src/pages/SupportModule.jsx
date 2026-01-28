@@ -243,7 +243,12 @@ const SupportModule = () => {
                                                 );
                                             }).map((s, idx) => (
                                                 <tr key={idx}>
-                                                    <td>{s.agentName || (s.salesPerson?.name) || '-'}</td>
+                                                    <td>
+                                                        <span className="fw-bold">{s.agentName || s.salesPerson?.name || '-'}</span>
+                                                        {s.salesPerson?.title && (
+                                                            <div className="text-muted small" style={{ fontSize: '0.7rem' }}>{s.salesPerson.title}</div>
+                                                        )}
+                                                    </td>
                                                     <td className="fw-bold">{s.customerName}</td>
                                                     <td className="text-center">{s.numberOfLines || 1}</td>
                                                     <td>{s.productName}</td>

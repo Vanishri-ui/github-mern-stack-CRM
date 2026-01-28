@@ -176,7 +176,12 @@ const ExecutionModule = () => {
                                                         <td className="fw-bold">{o.customerName}</td>
                                                         <td>{o.productName}</td>
                                                         <td className="text-center">{o.serviceLines || (o.numberOfLines || 1) + ' Lines'}</td>
-                                                        <td className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</td>
+                                                        <td>
+                                                            <span className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</span>
+                                                            {o.salesPerson?.title && (
+                                                                <div className="text-muted small" style={{ fontSize: '0.7rem' }}>{o.salesPerson.title}</div>
+                                                            )}
+                                                        </td>
                                                         <td className="text-center">
                                                             {hasPermission('UPDATE') && (
                                                                 <button className="btn btn-sm btn-success shadow-none" onClick={() => updateStatus(o._id, 'Executed')}>
@@ -216,7 +221,12 @@ const ExecutionModule = () => {
                                                         <td className="text-center">{new Date(o.date).toLocaleDateString()}</td>
                                                         <td>{o.customerName}</td>
                                                         <td>{o.productName}</td>
-                                                        <td className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</td>
+                                                        <td>
+                                                            <span className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</span>
+                                                            {o.salesPerson?.title && (
+                                                                <div className="text-muted small" style={{ fontSize: '0.7rem' }}>{o.salesPerson.title}</div>
+                                                            )}
+                                                        </td>
                                                         <td className="text-center">
                                                             <span className={`badge ${o.status === 'Billed' ? 'bg-success' : 'bg-primary'}`}>
                                                                 {o.status}
