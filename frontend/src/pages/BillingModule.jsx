@@ -9,14 +9,6 @@ const BillingModule = () => {
     const { searchQuery } = useContext(SearchContext);
     const [sales, setSales] = useState([]);
     const [activeTab, setActiveTab] = useState('list'); // list, docs
-    const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({
-        customerName: '',
-        productName: '',
-        amount: '',
-        date: new Date().toISOString().split('T')[0],
-        status: 'Billed'
-    });
 
     useEffect(() => {
         fetchData();
@@ -31,21 +23,8 @@ const BillingModule = () => {
         }
     };
 
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        try {
-            await axios.post('/api/sales', formData);
-            setShowModal(false);
-            setFormData({ customerName: '', productName: '', amount: '', date: new Date().toISOString().split('T')[0], status: 'Billed' });
-            fetchData();
-        } catch (e) {
-            alert('Failed to create invoice');
-        }
-    };
-
-    const handleInputChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+    // Create Function Removed
+    // Input Change Removed
 
     const updateStatus = async (id, status) => {
         try {
@@ -83,11 +62,7 @@ const BillingModule = () => {
                         </p>
                     </div>
                     <div className="col-md-6 text-end">
-                        {hasPermission('CREATE') && (
-                            <button className="btn btn-primary shadow-sm" onClick={() => setShowModal(true)}>
-                                <i className="bi bi-receipt me-1"></i> Create Invoice
-                            </button>
-                        )}
+                        {/* "Create Invoice" removed as per feedback. Billing should track existing sales. */}
                     </div>
                 </div>
 
@@ -118,6 +93,8 @@ const BillingModule = () => {
                                             <th>Customer Name</th>
                                             <th>Product</th>
                                             <th>Amount</th>
+                                            <th>Monthly Invoice</th>
+                                            <th>Payment Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -129,32 +106,48 @@ const BillingModule = () => {
                                                 <tr key={s._id}>
                                                     <td className="text-center">
                                                         <span className={`badge ${s.status === 'Paid' ? 'bg-success' : s.status === 'Billed' ? 'bg-warning text-dark' : 'bg-secondary'}`}>
-                                                            {s.status === 'Paid' ? 'PAID' : s.status === 'Billed' ? 'INVOICE SENT' : 'NOT SENT'}
+                                                            {s.status === 'Paid' ? 'PAID' : s.status === 'Billed' ? 'INVOICED' : s.status}
                                                         </span>
                                                     </td>
                                                     <td className="text-center">{new Date(s.date).toLocaleDateString()}</td>
                                                     <td className="fw-bold">{s.customerName}</td>
                                                     <td>{s.productName}</td>
                                                     <td className="text-end fw-bold text-success">${s.amount.toLocaleString()}</td>
+
+                                                    {/* Monthly Invoice Check */}
+                                                    <td className="text-center">
+                                                        {s.status === 'Executed' ? (
+                                                            <button className="btn btn-sm btn-outline-warning" onClick={() => updateStatus(s._id, 'Billed')} title="Mark Invoice Sent">
+                                                                <i className="bi bi-envelope"></i> Send Invoice
+                                                            </button>
+                                                        ) : (['Billed', 'Paid'].includes(s.status)) ? (
+                                                            <span className="text-success fw-bold"><i className="bi bi-check-circle-fill"></i> Sent</span>
+                                                        ) : (
+                                                            <span className="text-muted small">-</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Payment Received Check */}
+                                                    <td className="text-center">
+                                                        {s.status === 'Billed' ? (
+                                                            <button className="btn btn-sm btn-outline-success" onClick={() => updateStatus(s._id, 'Paid')} title="Mark Payment Received">
+                                                                <i className="bi bi-currency-dollar"></i> Confirm Pay
+                                                            </button>
+                                                        ) : (s.status === 'Paid') ? (
+                                                            <span className="text-success fw-bold"><i className="bi bi-check-double"></i> Received</span>
+                                                        ) : (
+                                                            <span className="text-muted small">Pending Invoice</span>
+                                                        )}
+                                                    </td>
+
                                                     <td className="text-center">
                                                         <div className="btn-group">
-                                                            {s.status === 'Executed' && hasPermission('UPDATE') && (
-                                                                <button className="btn btn-xs btn-dark" onClick={() => updateStatus(s._id, 'Billed')}>
-                                                                    <i className="bi bi-send-fill me-1"></i> Send Invoice
-                                                                </button>
-                                                            )}
-                                                            {s.status === 'Billed' && hasPermission('UPDATE') && (
-                                                                <button className="btn btn-xs btn-success" onClick={() => updateStatus(s._id, 'Paid')}>
-                                                                    <i className="bi bi-check-circle-fill me-1"></i> Confirm Payment
-                                                                </button>
-                                                            )}
                                                             {hasPermission('DELETE') && (
                                                                 <button className="btn btn-xs btn-outline-danger ms-1" onClick={() => deleteRecord(s._id)}>
                                                                     <i className="bi bi-trash"></i>
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        {s.status === 'Paid' && <span className="text-success small ms-2"><i className="bi bi-patch-check-fill me-1"></i>Settled</span>}
                                                     </td>
                                                 </tr>
                                             ))
@@ -171,45 +164,7 @@ const BillingModule = () => {
                         )}
                     </div>
                 </div>
-                {/* CREATE MODAL */}
-                {showModal && (
-                    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <div className="modal-dialog">
-                            <div className="modal-content">
-                                <div className="modal-header bg-primary text-white">
-                                    <h5 className="modal-title">New Invoice Entry</h5>
-                                    <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
-                                </div>
-                                <form onSubmit={handleCreate}>
-                                    <div className="modal-body">
-                                        <div className="mb-3">
-                                            <label className="form-label small fw-bold">Customer Name</label>
-                                            <input type="text" className="form-control" name="customerName" value={formData.customerName} onChange={handleInputChange} required />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label small fw-bold">Product</label>
-                                            <input type="text" className="form-control" name="productName" value={formData.productName} onChange={handleInputChange} required />
-                                        </div>
-                                        <div className="row">
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label small fw-bold">Amount ($)</label>
-                                                <input type="number" className="form-control" name="amount" value={formData.amount} onChange={handleInputChange} required />
-                                            </div>
-                                            <div className="col-md-6 mb-3">
-                                                <label className="form-label small fw-bold">Date</label>
-                                                <input type="date" className="form-control" name="date" value={formData.date} onChange={handleInputChange} required />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
-                                        <button type="submit" className="btn btn-primary">Create Invoice</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* CREATE MODAL REMOVED */}
             </div>
         </section>
     );

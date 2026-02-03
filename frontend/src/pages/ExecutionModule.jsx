@@ -47,11 +47,6 @@ const ExecutionModule = () => {
     const handleCreateWO = async (e) => {
         e.preventDefault();
         try {
-            // Generate WO Number logic is handled by backend or simply stored string
-            // For manual entry, we'll let the backend generate ID, but we can generate a temporary WO string if needed for display
-            // Ideally, the backend should assign a sequential WO number on save.
-            // For now, we stick to the user's request of "Proper Number" which we can derive from date + random or ID.
-
             const dateStr = woData.date.replace(/-/g, '');
             const random = Math.floor(1000 + Math.random() * 9000);
             const woNum = `WO-${dateStr}-${random}`;
@@ -61,7 +56,7 @@ const ExecutionModule = () => {
                 workOrderNumber: woNum,
                 status: 'Pending Execution',
                 agentName: 'Execution Team Manual Entry',
-                salesPerson: user.id // Fix: Required by backend, user object has .id
+                salesPerson: user.id
             });
             setShowWOModal(false);
             setWoData({ customerName: '', productName: '', amount: '', serviceLines: '', orderType: 'New Sale', date: new Date().toISOString().split('T')[0] });
@@ -72,11 +67,19 @@ const ExecutionModule = () => {
     // Helper to format WO number if not present in DB
     const getWONumber = (order) => {
         if (order.workOrderNumber) return order.workOrderNumber;
-        // Fallback generator
         const d = new Date(order.date);
         const dateStr = d.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
         const suffix = order._id.slice(-4).toUpperCase();
         return `WO-${dateStr}-${suffix}`;
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to PERMANENTLY delete this record?')) {
+            try {
+                await axios.delete(`/api/sales/${id}`);
+                fetchOrders();
+            } catch (e) { alert('Failed to delete'); }
+        }
     };
 
     const pendingOrders = orders.filter(o => o.status === 'Pending Execution' || !o.status);
@@ -181,8 +184,13 @@ const ExecutionModule = () => {
                                                         </td>
                                                         <td className="text-center">
                                                             {hasPermission('UPDATE') && (
-                                                                <button className="btn btn-sm btn-success shadow-none" onClick={() => updateStatus(o._id, 'Executed')}>
+                                                                <button className="btn btn-sm btn-success shadow-none me-1" onClick={() => updateStatus(o._id, 'Executed')}>
                                                                     <i className="bi bi-play-fill"></i> Execute
+                                                                </button>
+                                                            )}
+                                                            {hasPermission('DELETE') && (
+                                                                <button className="btn btn-sm btn-outline-danger shadow-none" onClick={() => handleDelete(o._id)}>
+                                                                    <i className="bi bi-trash"></i>
                                                                 </button>
                                                             )}
                                                         </td>
@@ -206,11 +214,12 @@ const ExecutionModule = () => {
                                                 <th>Product</th>
                                                 <th>Account Manager</th>
                                                 <th>Status</th>
+                                                {hasPermission('DELETE') && <th>Action</th>}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {executedOrders.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center py-4 text-muted">No history found.</td></tr>
+                                                <tr><td colSpan="6" className="text-center py-4 text-muted">No history found.</td></tr>
                                             ) : (
                                                 executedOrders.map(o => (
                                                     <tr key={o._id}>
@@ -229,6 +238,13 @@ const ExecutionModule = () => {
                                                                 {o.status}
                                                             </span>
                                                         </td>
+                                                        {hasPermission('DELETE') && (
+                                                            <td className="text-center">
+                                                                <button className="btn btn-xs btn-outline-danger" onClick={() => handleDelete(o._id)}>
+                                                                    <i className="bi bi-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        )}
                                                     </tr>
                                                 ))
                                             )}
@@ -293,8 +309,6 @@ const ExecutionModule = () => {
                         </div>
                     </div>
                 )}
-
-
             </div>
         </section>
     );

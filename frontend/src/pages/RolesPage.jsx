@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
 
 const RolesPage = () => {
+    const { user: currentUser } = useContext(AuthContext); // Rename to avoid conflict if needed
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedUser, setSelectedUser] = useState(null); // For modal
 
     useEffect(() => {
         fetchUsers();
@@ -31,6 +34,21 @@ const RolesPage = () => {
         }
     };
 
+    const getPermIcon = (perm) => {
+        switch (perm) {
+            case 'CREATE': return <i className="bi bi-plus-circle-fill text-success" title="Create"></i>;
+            case 'READ': return <i className="bi bi-eye-fill text-info" title="Read"></i>;
+            case 'UPDATE': return <i className="bi bi-pencil-fill text-warning" title="Update"></i>;
+            case 'DELETE': return <i className="bi bi-trash-fill text-danger" title="Delete"></i>;
+            default: return <span className="badge bg-secondary">{perm}</span>;
+        }
+    };
+
+    const handleUserClick = (u) => {
+        // "Touched the name" interaction
+        setSelectedUser(u);
+    };
+
     if (loading) return <div className="p-5 text-center">Loading Roles...</div>;
 
     return (
@@ -39,7 +57,7 @@ const RolesPage = () => {
                 <div className="row mb-4">
                     <div className="col-12">
                         <h1 className="fw-bold text-dark mb-0">Staff Roles & Permissions</h1>
-                        <p className="text-muted">Dynamic organizational hierarchy based on system access levels.</p>
+                        <p className="text-muted">Dynamic organizational hierarchy. Click a user to view details.</p>
                     </div>
                 </div>
 
@@ -57,21 +75,29 @@ const RolesPage = () => {
                                     <div className="card-body p-0">
                                         <ul className="list-group list-group-flush">
                                             {deptUsers.map(u => (
-                                                <li className="list-group-item py-3" key={u._id}>
+                                                <li
+                                                    className="list-group-item py-3 list-group-item-action"
+                                                    key={u._id}
+                                                    onClick={() => handleUserClick(u)}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
                                                     <div className="d-flex align-items-center">
                                                         <div className="flex-shrink-0">
                                                             <i className={`bi bi-person-circle fs-4 text-${getDeptColor(dept)}`}></i>
                                                         </div>
                                                         <div className="flex-grow-1 ms-3">
-                                                            <div className="fw-bold">{u.name}</div>
+                                                            <div className="fw-bold text-primary">{u.name}</div>
                                                             <div className="text-muted small mb-1">
                                                                 <span className="badge bg-light text-dark border me-1">{u.title || u.role}</span>
                                                             </div>
-                                                            <div className="d-flex flex-wrap gap-1">
+                                                            <div className="d-flex flex-wrap gap-2 mt-2">
                                                                 {u.permissions?.map(p => (
-                                                                    <span key={p} className="badge bg-secondary" style={{ fontSize: '0.6rem' }}>{p}</span>
+                                                                    <span key={p} className="fs-6 me-1">{getPermIcon(p)}</span>
                                                                 ))}
                                                             </div>
+                                                        </div>
+                                                        <div className="ms-auto text-muted">
+                                                            <i className="bi bi-chevron-right"></i>
                                                         </div>
                                                     </div>
                                                 </li>
@@ -84,9 +110,52 @@ const RolesPage = () => {
                     })}
                 </div>
             </div>
+
+            {/* USER DETAIL MODAL */}
+            {selectedUser && (
+                <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Staff Details</h5>
+                                <button className="btn-close" onClick={() => setSelectedUser(null)}></button>
+                            </div>
+                            <div className="modal-body text-center p-4">
+                                <div className="mb-3">
+                                    <div className="d-inline-block rounded-circle bg-light p-3 mb-2 shadow-sm">
+                                        <i className={`bi bi-person-fill fs-1 text-${getDeptColor(selectedUser.department)}`}></i>
+                                    </div>
+                                </div>
+                                <h3 className="fw-bold">{selectedUser.name}</h3>
+                                <p className="text-muted">{selectedUser.title || selectedUser.role.toUpperCase()}</p>
+                                <span className={`badge bg-${getDeptColor(selectedUser.department)} mb-4`}>{selectedUser.department.toUpperCase()}</span>
+
+                                <div className="text-start border-top pt-3">
+                                    <h6 className="fw-bold mb-3">System Permissions</h6>
+                                    <div className="d-flex justify-content-center gap-4">
+                                        {selectedUser.permissions?.map(p => (
+                                            <div key={p} className="text-center">
+                                                <div className="fs-3">{getPermIcon(p)}</div>
+                                                <small className="text-muted" style={{ fontSize: '0.75rem' }}>{p}</small>
+                                            </div>
+                                        ))}
+                                        {(!selectedUser.permissions || selectedUser.permissions.length === 0) && <p className="text-muted small">No specific permissions assigned.</p>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer justify-content-center bg-light">
+                                <button className="btn btn-secondary btn-sm" onClick={() => setSelectedUser(null)}>Close</button>
+                                {/* Future: Add Edit Button here if RBAC allows */}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 .card-purple { border-top: 3px solid #6f42c1; }
                 .text-purple { color: #6f42c1; }
+                .bg-purple { background-color: #6f42c1 !important; color: white; }
             `}</style>
         </section>
     );

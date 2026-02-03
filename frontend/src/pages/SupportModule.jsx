@@ -105,6 +105,15 @@ const SupportModule = () => {
         }
     };
 
+    const handleDeleteTicket = async (id) => {
+        if (window.confirm('Are you sure you want to PERMANENTLY delete this ticket?')) {
+            try {
+                await axios.delete(`/api/tickets/${id}`);
+                fetchTickets();
+            } catch (e) { alert('Failed to delete ticket'); }
+        }
+    };
+
     // --- UI HELPERS ---
 
     return (
@@ -194,11 +203,18 @@ const SupportModule = () => {
                                                         </td>
                                                         <td className="text-center">{t.user ? t.user.name : 'Unknown'}</td>
                                                         <td className="text-center">
-                                                            {(user.role === 'admin' || user.department === 'tech') && t.status !== 'Resolved' && hasPermission('UPDATE') && (
-                                                                <button className="btn btn-sm btn-success shadow-sm" onClick={() => handleResolve(t._id)}>
-                                                                    <i className="bi bi-check-lg"></i> Solve
-                                                                </button>
-                                                            )}
+                                                            <div className="btn-group">
+                                                                {(user.role === 'admin' || user.department === 'tech') && t.status !== 'Resolved' && hasPermission('UPDATE') && (
+                                                                    <button className="btn btn-sm btn-success shadow-sm" onClick={() => handleResolve(t._id)}>
+                                                                        <i className="bi bi-check-lg"></i> Solve
+                                                                    </button>
+                                                                )}
+                                                                {hasPermission('DELETE') && (
+                                                                    <button className="btn btn-sm btn-outline-danger shadow-sm ms-1" onClick={() => handleDeleteTicket(t._id)}>
+                                                                        <i className="bi bi-trash"></i>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
