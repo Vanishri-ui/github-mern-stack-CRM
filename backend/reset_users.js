@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('./models/User');
 
-mongoose.connect("mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0")
+mongoose.connect('mongodb://localhost:27017/mern_crm')
     .then(async () => {
         console.log("Connected to DB");
         await User.deleteMany({});

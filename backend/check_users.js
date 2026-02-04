@@ -1,9 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('./models/User');
 
-const MONGO_URI = 'mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0';
-
-mongoose.connect(MONGO_URI)
+mongoose.connect('mongodb://localhost:27017/mern_crm')
     .then(async () => {
         console.log('MongoDB Connected');
 

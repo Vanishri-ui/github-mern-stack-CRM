@@ -1,10 +1,11 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0')
-    .then(() => console.log('MongoDB Connected'))
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB Connected (Cloud)'))
     .catch(err => console.log(err));
 
 // Hierarchy Data

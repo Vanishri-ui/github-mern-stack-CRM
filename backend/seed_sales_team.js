@@ -3,8 +3,8 @@ const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0')
-    .then(() => console.log('MongoDB Connected'))
+mongoose.connect('mongodb://localhost:27017/mern_crm')
+    .then(() => console.log('MongoDB Connected (Local)'))
     .catch(err => console.log(err));
 
 // Sales Team Data

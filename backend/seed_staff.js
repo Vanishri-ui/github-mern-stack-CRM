@@ -100,7 +100,7 @@ const usersToUpdate = [
 
 const seedUsers = async () => {
     try {
-        await mongoose.connect(MONGO_URI);
+        await mongoose.connect('mongodb://localhost:27017/mern_crm');
         console.log("Connected to MongoDB...");
 
         for (const userData of usersToUpdate) {

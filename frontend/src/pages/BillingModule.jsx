@@ -10,6 +10,18 @@ const BillingModule = () => {
     const [sales, setSales] = useState([]);
     const [activeTab, setActiveTab] = useState('list'); // list, docs
 
+    const [showModal, setShowModal] = useState(false);
+    const [isEdit, setIsEdit] = useState(false);
+    const [currentId, setCurrentId] = useState(null);
+    const [formData, setFormData] = useState({
+        customerName: '',
+        productName: '',
+        amount: '',
+        agentName: '',
+        date: new Date().toISOString().split('T')[0],
+        status: 'Executed'
+    });
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -23,8 +35,52 @@ const BillingModule = () => {
         }
     };
 
-    // Create Function Removed
-    // Input Change Removed
+    const handleInputChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (isEdit) {
+                await axios.put(`/api/sales/${currentId}`, formData);
+            } else {
+                await axios.post('/api/sales', formData);
+            }
+            setShowModal(false);
+            resetForm();
+            fetchData();
+        } catch (e) {
+            alert('Error saving record');
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            customerName: '',
+            productName: '',
+            amount: '',
+            agentName: '',
+            date: new Date().toISOString().split('T')[0],
+            status: 'Executed'
+        });
+        setIsEdit(false);
+        setCurrentId(null);
+    };
+
+    const handleEdit = (sale) => {
+        setFormData({
+            customerName: sale.customerName,
+            productName: sale.productName,
+            amount: sale.amount,
+            agentName: sale.agentName || '',
+            date: new Date(sale.date).toISOString().split('T')[0],
+            status: sale.status || 'Executed'
+        });
+        setIsEdit(true);
+        setCurrentId(sale._id);
+        setShowModal(true);
+    };
 
     const updateStatus = async (id, status) => {
         try {
@@ -43,12 +99,12 @@ const BillingModule = () => {
     };
 
     // Filter: Show everything that is past technical execution (Executed, Billed, Paid)
+    // Actually, if we allow "Add" here, maybe we should show all or at least let them see what they added
     const billingItems = sales.filter(s =>
-        (s.status === 'Executed' || s.status === 'Billed' || s.status === 'Paid') &&
         (!searchQuery || s.customerName.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm);
+    const hasPermission = (perm) => user.role === 'admin' || user.permissions?.includes(perm) || user.isDepartmentHead;
 
     return (
         <section className="content-header">
@@ -62,7 +118,11 @@ const BillingModule = () => {
                         </p>
                     </div>
                     <div className="col-md-6 text-end">
-                        {/* "Create Invoice" removed as per feedback. Billing should track existing sales. */}
+                        {hasPermission('CREATE') && (
+                            <button className="btn btn-primary shadow-sm" onClick={() => { resetForm(); setShowModal(true); }}>
+                                <i className="bi bi-plus-lg me-1"></i> Add Record
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -100,19 +160,19 @@ const BillingModule = () => {
                                     </thead>
                                     <tbody>
                                         {billingItems.length === 0 ? (
-                                            <tr><td colSpan="6" className="text-center py-4 text-muted">No records found.</td></tr>
+                                            <tr><td colSpan="8" className="text-center py-4 text-muted">No records found.</td></tr>
                                         ) : (
                                             billingItems.map(s => (
                                                 <tr key={s._id}>
                                                     <td className="text-center">
-                                                        <span className={`badge ${s.status === 'Paid' ? 'bg-success' : s.status === 'Billed' ? 'bg-warning text-dark' : 'bg-secondary'}`}>
-                                                            {s.status === 'Paid' ? 'PAID' : s.status === 'Billed' ? 'INVOICED' : s.status}
+                                                        <span className={`badge ${s.status === 'Paid' ? 'bg-success' : s.status === 'Billed' ? 'bg-warning text-dark' : s.status === 'Executed' ? 'bg-primary' : 'bg-secondary'}`}>
+                                                            {s.status === 'Paid' ? 'PAID' : s.status === 'Billed' ? 'INVOICED' : s.status || 'Pending'}
                                                         </span>
                                                     </td>
                                                     <td className="text-center">{new Date(s.date).toLocaleDateString()}</td>
                                                     <td className="fw-bold">{s.customerName}</td>
                                                     <td>{s.productName}</td>
-                                                    <td className="text-end fw-bold text-success">${s.amount.toLocaleString()}</td>
+                                                    <td className="text-end fw-bold text-success">${Number(s.amount).toLocaleString()}</td>
 
                                                     {/* Monthly Invoice Check */}
                                                     <td className="text-center">
@@ -142,6 +202,9 @@ const BillingModule = () => {
 
                                                     <td className="text-center">
                                                         <div className="btn-group">
+                                                            <button className="btn btn-xs btn-outline-primary" onClick={() => handleEdit(s)}>
+                                                                <i className="bi bi-pencil"></i>
+                                                            </button>
                                                             {hasPermission('DELETE') && (
                                                                 <button className="btn btn-xs btn-outline-danger ms-1" onClick={() => deleteRecord(s._id)}>
                                                                     <i className="bi bi-trash"></i>
@@ -164,10 +227,62 @@ const BillingModule = () => {
                         )}
                     </div>
                 </div>
-                {/* CREATE MODAL REMOVED */}
+
+                {/* CREATE/EDIT MODAL */}
+                {showModal && (
+                    <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog modal-lg">
+                            <div className="modal-content">
+                                <div className="modal-header bg-primary text-white">
+                                    <h5 className="modal-title">{isEdit ? 'Edit Billing Record' : 'Add Billing Record'}</h5>
+                                    <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+                                </div>
+                                <form onSubmit={handleSubmit}>
+                                    <div className="modal-body">
+                                        <div className="row g-3">
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Customer Name</label>
+                                                <input type="text" className="form-control" name="customerName" value={formData.customerName} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Product</label>
+                                                <input type="text" className="form-control" name="productName" value={formData.productName} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Amount ($)</label>
+                                                <input type="number" className="form-control" name="amount" value={formData.amount} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Agent Name</label>
+                                                <input type="text" className="form-control" name="agentName" value={formData.agentName} onChange={handleInputChange} />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Date</label>
+                                                <input type="date" className="form-control" name="date" value={formData.date} onChange={handleInputChange} required />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Status</label>
+                                                <select className="form-select" name="status" value={formData.status} onChange={handleInputChange}>
+                                                    <option value="Paid">Paid</option>
+                                                    <option value="Billed">Billed</option>
+                                                    <option value="Executed">Executed</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer">
+                                        <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
+                                        <button type="submit" className="btn btn-primary">{isEdit ? 'Save Changes' : 'Add Record'}</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );
 };
 
 export default BillingModule;
+

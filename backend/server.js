@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -74,7 +75,7 @@ const upload = multer({ storage });
 // MongoDB Connection
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI || "mongodb+srv://admin:managementadmin@cluster0.qyyfzgw.mongodb.net/mern_crm?appName=Cluster0")
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected (Cloud - mern_crm)"))
   .catch((err) => console.log(err));
 
