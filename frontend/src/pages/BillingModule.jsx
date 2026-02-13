@@ -131,7 +131,7 @@ const BillingModule = () => {
                         <ul className="nav nav-tabs" role="tablist">
                             <li className="nav-item">
                                 <span className={`nav-link ${activeTab === 'list' ? 'active' : ''}`} role="button" onClick={() => setActiveTab('list')}>
-                                    <i className="bi bi-list-columns-reverse me-2"></i>Invoice Management
+                                    <i className="bi bi-list-columns-reverse me-2"></i>Monthly Billing Tracking
                                 </span>
                             </li>
                             <li className="nav-item">
@@ -178,7 +178,7 @@ const BillingModule = () => {
                                                     <td className="text-center">
                                                         {s.status === 'Executed' ? (
                                                             <button className="btn btn-sm btn-outline-warning" onClick={() => updateStatus(s._id, 'Billed')} title="Mark Invoice Sent">
-                                                                <i className="bi bi-envelope"></i> Send Invoice
+                                                                <i className="bi bi-envelope"></i> Mark Sent
                                                             </button>
                                                         ) : (['Billed', 'Paid'].includes(s.status)) ? (
                                                             <span className="text-success fw-bold"><i className="bi bi-check-circle-fill"></i> Sent</span>

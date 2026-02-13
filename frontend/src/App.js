@@ -10,7 +10,8 @@ import SupportModule from "./pages/SupportModule";
 import FinanceModule from "./pages/FinanceModule";
 
 import BillingModule from "./pages/BillingModule";
-import ExecutionModule from "./pages/ExecutionModule"; // NEW
+import ExecutionModule from "./pages/ExecutionModule";
+import LeadsModule from "./pages/LeadsModule"; // NEW
 import DocumentsPage from "./pages/DocumentsPage";
 import RolesPage from "./pages/RolesPage";
 
@@ -57,6 +58,13 @@ function App() {
               <Route path="/sales" element={
                 <RoleRoute allowedRoles={['sales', 'admin']}>
                   <SalesModule />
+                </RoleRoute>
+              } />
+
+              {/* Leads: SALES & ADMIN */}
+              <Route path="/leads" element={
+                <RoleRoute allowedRoles={['sales', 'admin']}>
+                  <LeadsModule />
                 </RoleRoute>
               } />
 

@@ -12,6 +12,15 @@ const Dashboard = () => {
     // Updated to reflect current module structure (No 'Ops')
     const departments = [
         {
+            title: 'Leads & Pipeline',
+            head: 'Sales Team',
+            icon: 'bi-filter-circle',
+            gradient: 'linear-gradient(135deg, #FF512F 0%, #DD2476 100%)', // Premium Rose/Red
+            link: '/leads',
+            desc: 'New leads, pipeline tracking, and conversion to active orders.',
+            stats: 'Manage Pipeline'
+        },
+        {
             title: 'Sales & Orders',
             head: 'Mohammad Tabrez',
             icon: 'bi-graph-up-arrow',

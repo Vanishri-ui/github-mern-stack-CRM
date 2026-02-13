@@ -21,6 +21,7 @@ const Sidebar = () => {
 
     const navItems = [
         { label: 'Dashboard', path: '/dashboard', icon: 'bi-speedometer2', roles: ['admin', 'sales', 'execution', 'finance', 'tech'] }, // All roles can see dashboard
+        { label: 'Leads & Pipeline', path: '/leads', icon: 'bi-filter-circle', roles: ['admin', 'sales'] },
         { label: 'Sales', path: '/sales', icon: 'bi-currency-dollar', roles: ['admin', 'sales'] },
         { label: 'Execution', path: '/execution', icon: 'bi-play-circle-fill', roles: ['admin', 'execution'] },
         { label: 'Financial Revenue', path: '/finance', icon: 'bi-database-fill-check', roles: ['admin', 'finance'] },

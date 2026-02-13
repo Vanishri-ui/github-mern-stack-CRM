@@ -23,6 +23,16 @@ const SaleSchema = new mongoose.Schema({
     workOrderNumber: { type: String }, // e.g., VIVA-WO-20250122-001
     virtualNumber: { type: String }, // New Field
 
+    // Additional fields requested
+    companyCity: { type: String },
+    customerCompanyName: { type: String },
+    customerEmail: { type: String },
+    customerContact: { type: String },
+    requirementDescription: { type: String },
+    accountType: { type: String },
+    accountName: { type: String },
+    placeMailId: { type: String },
+
     // Reminder Fields
     followUpDate: { type: Date },
     followUpNotes: { type: String }

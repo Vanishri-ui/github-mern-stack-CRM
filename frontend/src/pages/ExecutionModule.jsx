@@ -19,6 +19,9 @@ const ExecutionModule = () => {
         amount: '',
         serviceLines: '',
         orderType: 'New Sale',
+        accountType: '',
+        accountName: '',
+        placeMailId: '',
         date: new Date().toISOString().split('T')[0]
     });
 
@@ -59,7 +62,7 @@ const ExecutionModule = () => {
                 salesPerson: user.id
             });
             setShowWOModal(false);
-            setWoData({ customerName: '', productName: '', amount: '', serviceLines: '', orderType: 'New Sale', date: new Date().toISOString().split('T')[0] });
+            setWoData({ customerName: '', productName: '', amount: '', serviceLines: '', orderType: 'New Sale', accountType: '', accountName: '', placeMailId: '', date: new Date().toISOString().split('T')[0] });
             fetchOrders();
         } catch (e) { alert('Failed to create Work Order'); }
     };
@@ -156,6 +159,7 @@ const ExecutionModule = () => {
                                                 <th>Customer</th>
                                                 <th>Product</th>
                                                 <th>Lines</th>
+                                                <th>Account Details</th>
                                                 <th>Account Manager</th>
                                                 <th>Action</th>
                                             </tr>
@@ -176,6 +180,10 @@ const ExecutionModule = () => {
                                                         <td className="fw-bold">{o.customerName}</td>
                                                         <td>{o.productName}</td>
                                                         <td className="text-center">{o.serviceLines || (o.numberOfLines || 1) + ' Lines'}</td>
+                                                        <td>
+                                                            <div className="fw-bold">{o.accountName || '-'}</div>
+                                                            <div className="text-muted small">{o.accountType || '-'} | {o.placeMailId || '-'}</div>
+                                                        </td>
                                                         <td>
                                                             <span className="fw-bold">{o.agentName || (o.salesPerson && o.salesPerson.name) || 'Unassigned'}</span>
                                                             {o.salesPerson?.title && (
@@ -294,6 +302,20 @@ const ExecutionModule = () => {
                                         <div className="mb-3">
                                             <label className="form-label small fw-bold">Amount</label>
                                             <input type="number" className="form-control" value={woData.amount} onChange={e => setWoData({ ...woData, amount: e.target.value })} required />
+                                        </div>
+                                        <div className="row">
+                                            <div className="col-md-6 mb-2">
+                                                <label className="form-label small fw-bold">Account Name</label>
+                                                <input type="text" className="form-control form-control-sm" value={woData.accountName} onChange={e => setWoData({ ...woData, accountName: e.target.value })} />
+                                            </div>
+                                            <div className="col-md-6 mb-2">
+                                                <label className="form-label small fw-bold">Account Type</label>
+                                                <input type="text" className="form-control form-control-sm" value={woData.accountType} onChange={e => setWoData({ ...woData, accountType: e.target.value })} placeholder="e.g., SIP, Hosted" />
+                                            </div>
+                                            <div className="col-12 mb-2">
+                                                <label className="form-label small fw-bold">Place Mail ID</label>
+                                                <input type="email" className="form-control form-control-sm" value={woData.placeMailId} onChange={e => setWoData({ ...woData, placeMailId: e.target.value })} />
+                                            </div>
                                         </div>
                                         <div className="mb-3">
                                             <label className="form-label small fw-bold">Details / Lines</label>

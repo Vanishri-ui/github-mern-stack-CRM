@@ -76,7 +76,7 @@ const FinanceModule = () => {
         // Only count 'Paid' sales as performance
         if (curr.status !== 'Paid') return acc;
 
-        // Date Filtering based on Sale Date (since we normalized statuses)
+        // Date Filtering based on Sale Date
         const sDate = new Date(curr.date);
         const today = new Date();
 
@@ -88,17 +88,37 @@ const FinanceModule = () => {
 
         const amName = curr.agentName || curr.salesPerson?.name || 'Unassigned';
         if (!acc[amName]) {
-            acc[amName] = { name: amName, revenue: 0, mrc: 0, recharge: 0, customers: new Set(), salesList: [] };
+            acc[amName] = {
+                name: amName,
+                revenue: 0,
+                newSalesRevenue: 0,
+                upgradeRevenue: 0,
+                mrc: 0,
+                recharge: 0,
+                customers: new Set(),
+                salesList: []
+            };
         }
-        acc[amName].revenue += (Number(curr.amount) || 0);
+
+        const amount = Number(curr.amount) || 0;
+        acc[amName].revenue += amount;
+
+        if (curr.orderType === 'Upgrade') {
+            acc[amName].upgradeRevenue += amount;
+        } else if (curr.orderType === 'New Sale') {
+            acc[amName].newSalesRevenue += amount;
+        }
+
         acc[amName].mrc += (Number(curr.mrc) || 0);
         acc[amName].recharge += (Number(curr.initialRecharge) || 0);
+
         if (curr.customerName) {
             acc[amName].customers.add(curr.customerName);
             acc[amName].salesList.push({
                 customer: curr.customerName,
-                amount: Number(curr.amount) || 0,
+                amount: amount,
                 mrc: Number(curr.mrc) || 0,
+                orderType: curr.orderType || 'New Sale',
                 date: sDate.toLocaleDateString()
             });
         }
@@ -249,13 +269,14 @@ const FinanceModule = () => {
                                     <thead className="table-dark text-center">
                                         <tr>
                                             <th className="text-start ps-3">Account Manager / Customer Breakdown</th>
-                                            <th>Revenue</th>
+                                            <th>Total Revenue</th>
+                                            <th>New Sales</th>
+                                            <th>Upgrades</th>
                                             <th>MRC</th>
-                                            <th>Initial Recharge</th>
                                         </tr>
                                     </thead>
                                     {amPerformanceArray.length === 0 ? (
-                                        <tbody><tr><td colSpan="4" className="text-center py-4 text-muted">No billed sales data available for performance metrics.</td></tr></tbody>
+                                        <tbody><tr><td colSpan="5" className="text-center py-4 text-muted">No billed sales data available for performance metrics.</td></tr></tbody>
                                     ) : (
                                         amPerformanceArray.map((am, idx) => (
                                             <tbody key={idx} className="border-bottom">
@@ -264,24 +285,27 @@ const FinanceModule = () => {
                                                         <i className="bi bi-person-badge-fill me-2"></i> {am.name.toUpperCase()}
                                                     </td>
                                                     <td className="text-end fw-bold text-dark px-3">${am.revenue.toLocaleString()}</td>
+                                                    <td className="text-end fw-bold text-primary px-3">${am.newSalesRevenue.toLocaleString()}</td>
+                                                    <td className="text-end fw-bold text-purple px-3" style={{ color: '#6f42c1' }}>${am.upgradeRevenue.toLocaleString()}</td>
                                                     <td className="text-end fw-bold text-dark px-3">${am.mrc.toLocaleString()}</td>
-                                                    <td className="text-end fw-bold text-dark px-3">${am.recharge.toLocaleString()}</td>
                                                 </tr>
                                                 {am.salesList.map((sale, sIdx) => (
                                                     <tr key={`${idx}-${sIdx}`} style={{ fontSize: '0.85rem' }}>
                                                         <td className="ps-5 text-muted">
-                                                            {sIdx + 1}. {sale.customer}
+                                                            {sIdx + 1}. {sale.customer} <span className="badge bg-secondary ms-2" style={{ fontSize: '0.65rem' }}>{sale.orderType}</span>
                                                         </td>
                                                         <td className="text-end text-success px-3">${sale.amount.toLocaleString()}</td>
+                                                        <td className="text-end text-muted px-3 small">{sale.orderType === 'New Sale' ? 'Yes' : '-'}</td>
+                                                        <td className="text-end text-muted px-3 small">{sale.orderType === 'Upgrade' ? 'Yes' : '-'}</td>
                                                         <td className="text-end text-info px-3">${sale.mrc.toLocaleString()}</td>
-                                                        <td className="text-center text-muted px-3 small">-</td>
                                                     </tr>
                                                 ))}
                                                 <tr className="bg-light">
                                                     <td className="text-end fw-bold pe-3">TOTAL PERFORMANCE FOR {am.name.toUpperCase()}</td>
                                                     <td className="text-end fw-bold text-success px-3 border-top border-2">${am.revenue.toLocaleString()}</td>
+                                                    <td className="text-end fw-bold text-primary px-3 border-top border-2">${am.newSalesRevenue.toLocaleString()}</td>
+                                                    <td className="text-end fw-bold px-3 border-top border-2" style={{ color: '#6f42c1' }}>${am.upgradeRevenue.toLocaleString()}</td>
                                                     <td className="text-end fw-bold text-info px-3 border-top border-2">${am.mrc.toLocaleString()}</td>
-                                                    <td className="text-end fw-bold text-warning px-3 border-top border-2">${am.recharge.toLocaleString()}</td>
                                                 </tr>
                                             </tbody>
                                         ))

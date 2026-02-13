@@ -31,7 +31,12 @@ const SalesModule = () => {
         status: 'Pending Execution',
         followUpDate: '',
         followUpNotes: '',
-        virtualNumber: '' // New Field
+        virtualNumber: '', // New Field
+        companyCity: '',
+        requirementDescription: '',
+        customerCompanyName: '',
+        customerEmail: '',
+        customerContact: ''
     });
 
     const [reminders, setReminders] = useState([]);
@@ -127,7 +132,12 @@ const SalesModule = () => {
             status: 'Pending Execution',
             followUpDate: '',
             followUpNotes: '',
-            virtualNumber: ''
+            virtualNumber: '',
+            companyCity: '',
+            requirementDescription: '',
+            customerCompanyName: '',
+            customerEmail: '',
+            customerContact: ''
         });
         setIsEditing(false);
         setCurrentId(null);
@@ -153,7 +163,12 @@ const SalesModule = () => {
             status: sale.status || 'Pending Execution',
             followUpDate: sale.followUpDate ? sale.followUpDate.split('T')[0] : '',
             followUpNotes: sale.followUpNotes || '',
-            virtualNumber: sale.virtualNumber || ''
+            virtualNumber: sale.virtualNumber || '',
+            companyCity: sale.companyCity || '',
+            requirementDescription: sale.requirementDescription || '',
+            customerCompanyName: sale.customerCompanyName || '',
+            customerEmail: sale.customerEmail || '',
+            customerContact: sale.customerContact || ''
         });
         setIsEditing(true);
         setCurrentId(sale._id);
@@ -230,8 +245,8 @@ const SalesModule = () => {
                     <div className="col-md-3 col-sm-6">
                         <div className="info-box shadow-sm mb-3">
                             <span className="info-box-icon bg-success elevation-1"><i className="bi bi-person-check"></i></span>
-                            <div className="info-box-content">
-                                <span className="info-box-text">My Performance</span>
+                            <div className="info-box-content" style={{ overflow: 'hidden' }}>
+                                <span className="info-box-text text-truncate" title="My Performance (New + Upgrade)">My Performance</span>
                                 <span className="info-box-number">${stats.mySalesTotal.toLocaleString()}</span>
                                 <div className="progress">
                                     <div className="progress-bar bg-success" style={{ width: `${Math.min((stats.mySalesTotal / stats.myTarget) * 100, 100)}%` }}></div>
@@ -425,6 +440,28 @@ const SalesModule = () => {
                                             <div className="col-md-6">
                                                 <label className="form-label small fw-bold">Product / Plan <span className="text-danger">*</span></label>
                                                 <input type="text" className="form-control form-select-sm" name="productName" value={formData.productName} onChange={handleInputChange} required />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Customer Company Name</label>
+                                                <input type="text" className="form-control form-select-sm" name="customerCompanyName" value={formData.customerCompanyName} onChange={handleInputChange} placeholder="Company Name" />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Customer Contact</label>
+                                                <input type="text" className="form-control form-select-sm" name="customerContact" value={formData.customerContact} onChange={handleInputChange} placeholder="Contact Number" />
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold">Customer Email</label>
+                                                <input type="email" className="form-control form-select-sm" name="customerEmail" value={formData.customerEmail} onChange={handleInputChange} placeholder="Email ID" />
+                                            </div>
+
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Company Registered City</label>
+                                                <input type="text" className="form-control form-select-sm" name="companyCity" value={formData.companyCity} onChange={handleInputChange} placeholder="e.g., Dubai" />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small fw-bold">Requirement Description</label>
+                                                <input type="text" className="form-control form-select-sm" name="requirementDescription" value={formData.requirementDescription} onChange={handleInputChange} placeholder="Briefly describe requirements" />
                                             </div>
 
                                             {/* SECTION 3: FINANCIALS */}

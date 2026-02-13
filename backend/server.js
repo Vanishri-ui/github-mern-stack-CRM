@@ -276,13 +276,18 @@ const Sale = require("./models/Sale");
 app.post("/api/sales", auth, async (req, res) => {
   try {
     const {
-      customerName, productName, amount, agentName, date, status,
+      customerName, customerCompanyName, customerEmail, customerContact,
+      productName, amount, agentName, date, status,
       serviceLines, orderType, mrc, initialRecharge, numberOfLines,
-      remarks, workOrderNumber, virtualNumber
+      remarks, workOrderNumber, virtualNumber,
+      companyCity, requirementDescription, accountType, accountName, placeMailId
     } = req.body;
 
     const newSale = new Sale({
       customerName,
+      customerCompanyName,
+      customerEmail,
+      customerContact,
       productName,
       amount,
       agentName,
@@ -296,6 +301,11 @@ app.post("/api/sales", auth, async (req, res) => {
       remarks,
       workOrderNumber,
       virtualNumber,
+      companyCity,
+      requirementDescription,
+      accountType,
+      accountName,
+      placeMailId,
       salesPerson: req.user.id
     });
     const savedSale = await newSale.save();
@@ -360,6 +370,142 @@ app.delete("/api/sales/:id", auth, async (req, res) => {
 
     await Sale.findByIdAndDelete(req.params.id);
     res.json({ msg: "Sale removed" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// --- LEAD & PIPELINE ROUTES ---
+
+const Lead = require("./models/Lead");
+
+// Create Lead
+app.post("/api/leads", auth, async (req, res) => {
+  try {
+    const { companyName, contactPerson, email, phone, city, source, estimatedValue, requirement, nextFollowUpDate } = req.body;
+    const newLead = new Lead({
+      companyName,
+      contactPerson,
+      email,
+      phone,
+      city,
+      source,
+      estimatedValue: Number(estimatedValue) || 0,
+      requirement,
+      nextFollowUpDate: nextFollowUpDate || null,
+      assignedTo: req.user.id
+    });
+    const savedLead = await newLead.save();
+    res.json(savedLead);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Get Leads (RBAC)
+app.get("/api/leads", auth, async (req, res) => {
+  try {
+    let query = {};
+    if (req.user.role !== 'admin' && !req.user.isSalesManager) {
+      query = { assignedTo: req.user.id };
+    }
+    const leads = await Lead.find(query).populate("assignedTo", "name").sort({ updatedAt: -1 });
+    res.json(leads);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Update Lead (Status, Notes, etc.)
+app.put("/api/leads/:id", auth, async (req, res) => {
+  try {
+    const { note } = req.body;
+    let updateData = { ...req.body };
+
+    if (note) {
+      const lead = await Lead.findById(req.params.id);
+      if (!lead) return res.status(404).json({ msg: "Lead not found" });
+
+      lead.activities.push({
+        note,
+        author: req.user.name
+      });
+      lead.lastInteraction = Date.now();
+
+      // Merge other fields from req.body
+      delete updateData.note; // Already handled
+      Object.assign(lead, updateData);
+
+      const savedLead = await lead.save();
+      return res.json(savedLead);
+    }
+
+    // Sanitize estimatedValue and nextFollowUpDate
+    if (updateData.estimatedValue === "") updateData.estimatedValue = 0;
+    if (updateData.nextFollowUpDate === "") updateData.nextFollowUpDate = null;
+
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData, lastInteraction: Date.now() },
+      { new: true }
+    );
+    res.json(lead);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Convert Lead to Sale
+app.post("/api/leads/convert/:id", auth, async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) return res.status(404).json({ msg: "Lead not found" });
+
+    // Create Sale record from Lead data
+    const newSale = new Sale({
+      customerName: lead.contactPerson,
+      customerCompanyName: lead.companyName,
+      customerEmail: lead.email,
+      customerContact: lead.phone,
+      productName: lead.requirement || 'Converted Lead Product',
+      amount: lead.estimatedValue || 0,
+      agentName: lead.agentName || req.user.name,
+      salesPerson: lead.assignedTo,
+      status: 'Pending Execution',
+      orderType: 'New Sale',
+      companyCity: lead.city,
+      remarks: `Converted from Lead. Original Note: ${lead.requirement || 'None'}`
+    });
+
+    await newSale.save();
+
+    // Update lead status
+    lead.status = 'Closed Won';
+    await lead.save();
+
+    res.json({ msg: "Lead converted successfully", sale: newSale });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Delete Lead
+app.delete("/api/leads/:id", auth, async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) return res.status(404).json({ msg: "Lead not found" });
+
+    if (req.user.role !== 'admin' && lead.assignedTo.toString() !== req.user.id) {
+      return res.status(401).json({ msg: "Not authorized" });
+    }
+
+    await Lead.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Lead removed" });
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
